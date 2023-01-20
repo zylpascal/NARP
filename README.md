@@ -5,7 +5,7 @@
 
 ## Origin
 **NARP** is a Fortran program originally developed by [Prof. Chanan Singh](https://engineering.tamu.edu/electrical/profiles/csingh.html) (Texas A&M University) and the Associated Power Analysts, Inc. to perform bulk power system reliability assessment.
-
+(This github repository is maintianed by Prof. Singh's postdoc [Dr. Yongli Zhu](https://yonglizhu.github.io/#research-interest))
 
 ## Main Features
 Here are a few features of the **NARP** tool:
@@ -16,18 +16,19 @@ Here are a few features of the **NARP** tool:
 * Provide simulation-restart capability (from saved snapshot files)
 * Support the "Load loss sharing" mode
 
-A detailed tutorial can be found on our doc [NARP_USER_GUIDE].
+A detailed tutorial can be found on our doc [NARP_USER_GUIDE](https://github.com/zylpascal/NARP/blob/main/NARP-USERGUIDE%20copy.pdf).
 
 
 ## Where to get it
-* Clone or Fork the source code on [GitHub](https://github.com/Breakthrough-Energy/PowerSimData). Or,
-* Get a binary file with GUI released from the maintainer [Dr. Yongli Zhu](https://yonglizhu.github.io/#research-interest)
+* Clone or Fork the source code on [GitHub](https://github.com/zylpascal/NARP). 
+* Or, get a binary file with GUI released from the maintainer [Dr. Yongli Zhu](https://yonglizhu.github.io/#research-interest)
 
 
 ## Installation
 
 1. Install Fortran compiler (skip this step if you already have a proper compiler)
-*To maximize the speed advantage of this NARP tool, the Intel Fortran compiler is recommended, which is free to academic users.*
+
+   *To maximize the speed advantage of this NARP tool, the Intel Fortran compiler is recommended, which is free to academic users.*
 
 2. Install a proper code editor, e.g., Visual Studio Code
 
@@ -46,8 +47,8 @@ A detailed tutorial can be found on our doc [NARP_USER_GUIDE].
 ## Documentation
 [Code documentation][docstrings] inline docstrings are provided in the source code file.
 Besides, 
-1)	A [NARP_USER_GUIDE] pdf file is provided with more details regarding the background logic , input/output formats, and examples.
-2)	A related Sandia Report is also uploaded in this repository, where real use cases of this NARP tool were reported.
+1)	A [NARP_USER_GUIDE](https://github.com/zylpascal/NARP/blob/main/NARP-USERGUIDE%20copy.pdf) pdf file is provided with more details regarding the background logic , input/output formats, and examples.
+2)	A related [Sandia Report](https://github.com/zylpascal/NARP/blob/main/Sandia.pdf) is also uploaded in this repository, where real use cases of this NARP tool were reported.
 
 
 ## Communication Channels 
