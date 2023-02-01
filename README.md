@@ -24,12 +24,12 @@ A detailed tutorial can be found on our doc [NARP_USER_GUIDE](https://github.com
 * Or, get a binary file with GUI released from the maintainer [Dr. Yongli Zhu](https://yonglizhu.github.io/#research-interest)
 
 ## Citation 
-- Please cite our following paper when you use this tool:  
+- Please cite our following [paper](https://arxiv.org/abs/2301.09579) when you use this tool:  
 `
 Y. Zhu and C. Singh, “A Free Industry-grade Education Tool for Bulk Power System Reliability Assessment.” arXiv, 2023, doi: 10.48550/ARXIV.2301.09579.
 `
 
-This paper describes the dataset and main logic of the NARP tool and provides an example case study for a five-area system. The paper has been submitted to an IEEE conference.
+This paper describes the input/output formats and the main logic of the NARP tool with a case study on a five-area system. The paper has been submitted to an IEEE conference.
 
 ## Installation
 
