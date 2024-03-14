@@ -1,7 +1,7 @@
 CMS$OPTIMIZE:'ON:xp'
       PROGRAM NARP2020
 C**********************************************************************
-C This Fortran program was originally developed by Prof. Chanan Singh 
+C This Fortran program was originally developed by Prof. Chanan Singh
 C (Texas A&M University) and the Associated Power Analysts, Inc.
 C**********************************************************************
 C  TO COMPILE WITH FTN77 ON PRIME USE:
@@ -95,9 +95,15 @@ C  REMOVED STATUS='NEW' TO GIVE ADDITIONAL FLEXIBILITY ON O/P FILES...GENE P.
       OPEN(UNIT=16,FILE='OUTPUT',STATUS='OLD',ACCESS='SEQUENTIAL',
      *ERR=601)
       GO TO 602
+C601  WRITE(*,603)
+C603  FORMAT(15X,'FILE OUTPUT EXISTS AND CAN NOT BE OVERWRITTEN,',/
+C    *,15X,'PROGRAM ABORTED.',/)
+C     GO TO 700
  601  CONTINUE
       OPEN(UNIT=16,FILE='OUTPUT',STATUS='NEW',ACCESS='SEQUENTIAL')
  602  CONTINUE
+C      OPEN(UNIT=15,FILE='DUMP',STATUS='OLD',FORM='UNFORMATTED',
+C     *DEFAULTFILE='.BIN', ACCESS='SEQUENTIAL',ERR=800)
       OPEN(UNIT=15,FILE='DUMP',STATUS='OLD',FORM='UNFORMATTED',
      * ACCESS='SEQUENTIAL',ERR=800)
 C IF DUMP EXISTS ASSUME RESTART- C. SINGH DEC 1993
@@ -107,16 +113,23 @@ C IF DUMP DOES NOT EXIST OPEN DUMP AND ASSUME A BASE RUN - C. SINGH DEC 1993
  800  IRST=0
       OPEN(UNIT=15,FILE='DUMP',STATUS='NEW',FORM='UNFORMATTED',
      * ACCESS='SEQUENTIAL')
+C      OPEN(UNIT=15,FILE='DUMP',STATUS='NEW',FORM='UNFORMATTED',
+C     *DEFAULTFILE='.BIN', ACCESS='SEQUENTIAL')
  850  CONTINUE
-
+C
+C
+C  FOR PRIME USE OPEN THIS STATEMENT FOR FILE 15
+C     OPEN(UNIT=15,FILE='DUMP',FORM='UNFORMATTED',ACCESS='SEQUENTIAL')
+C  MOVED THE ABOVE LINE TO THE RSTART AND INTM ROUTINES ... GENE PRESTON
       IF(IOPN.NE.0)GO TO 700
       NOTIFY = 20
 
+
       JU = 16
       JU1 = 12
-      JU2 = 10
-      JU3 = 11
-      JU4 = 9
+       JU2 = 10
+       JU3 = 11
+       JU4 = 9
       NFCST = 1
       NOERR = 1
       LVLTRC = 0
@@ -124,26 +137,20 @@ C IF DUMP DOES NOT EXIST OPEN DUMP AND ASSUME A BASE RUN - C. SINGH DEC 1993
       WRITE(*,389)
  389  FORMAT(15X,'CALL INITFL',/)
       CALL INITFL
-
       CALL DATAF1(JU)
-
       IF(IABORT.NE.0)GO TO 700
       IF(IRST.EQ.0)GO TO 362
-
       OPEN(UNIT=13,FILE='TRAOUT',STATUS='OLD',ACCESS='APPEND',ERR=356)
       GO TO 361
-
  356  CONTINUE
       IF(IOI.EQ.0)GO TO 359
       WRITE(*,357)
  357  FORMAT(15X,'FOR RESTART TRAOUT DOES NOT EXIST, PROGRAM ABORTED',/)
       GO TO 700
-
  362  CONTINUE
       OPEN(UNIT=13,FILE='TRAOUT',STATUS='OLD',ACCESS='SEQUENTIAL',
      *ERR=359)
       GO TO 361
-
  359  CONTINUE
       OPEN(UNIT=13,FILE='TRAOUT',STATUS='NEW',ACCESS='SEQUENTIAL')
       WRITE(*,351)
@@ -152,50 +159,46 @@ C IF DUMP DOES NOT EXIST OPEN DUMP AND ASSUME A BASE RUN - C. SINGH DEC 1993
 
       LSTEP = MAXEUE/20
       CALL INITL
+C     CALL ECHOER
+C     CALL DUMPIT
+C     DO 20 I=1,100000
+C     INDUMP(I)=0
+C20   CONTINUE
       IFIN=FINISH/8760
-
 C LOGIC FOR DUMPING INTERMEDIATE RESULTS CHANGED
 C INDUMP ARRAY NO LONGER REQUIRED
 C APRIL 1994 -C. SINGH
-
+C     INDUMP(IFIN)=1
+C     IDL=IFIN/INTV
+C     DO 30 I=1,IDL
+C     J=I*INTV
+C     INDUMP(J)=1
+C30   CONTINUE
       INTVT=INTV
       IF(IRST.EQ.0)GO TO 10
-
       CALL RSTART
-
       INTVTT=CLOCK/8760
-
-      WRITE(*,66)
- 66   FORMAT(15x,///,15X,'**WARNING ! THIS IS A RESTART CASE.')
-
+       WRITE(*,66)
+ 66    FORMAT(15x,///,15X,'**WARNING ! THIS IS A RESTART CASE.')
       WRITE(*,33)INTVTT
  33   FORMAT(15X,'**NUMBER OF PREVIOUS REPLICATIONS : ',I8,/)
-
  10   CONTINUE
-
       CALL CONTRL(RFLAG)
-
  700  CONTINUE
       CLOSE(UNIT=16)
-
 C  CLOSE REST OF OUTPUT FILES TO PROPERLY PLACE AN EOF MARKER...GENE P. 1/26/89
 C CLOSE AND DELETE FILES -C. SINGH DEC 1993
       CLOSE(UNIT=9,STATUS='DELETE')
       CLOSE(UNIT=12,STATUS='DELETE')
-
       IF(IOI.NE.0)GO TO 950
       CLOSE(UNIT=13,STATUS='DELETE')
-
  950  CONTINUE
       CLOSE(UNIT=14,STATUS='DELETE')
-
       IF(IREM.NE.0)GO TO 900
       CLOSE(UNIT=15,STATUS='DELETE')
-
  900  CONTINUE
       STOP
       END
-
 
 
       BLOCK DATA
@@ -235,7 +238,7 @@ C1000 FORMAT (/,' ',' ENTERING SUBROUT. INITL',/)
       CLOCK = 0.0
 
 
-C......BEGIN YEAR IN FIRST QUARTER....JQRTR IS NOT USED !(YL 2021)...........
+C......BEGIN YEAR IN FIRST QUARTER......................................
 
       JQRTR = 1
 
@@ -277,6 +280,91 @@ CC    ATRIB(1) = DFLOAT(JSTEP)
       END
 
 
+      SUBROUTINE DUMPIT
+
+      INCLUDE 'NARPERC.txt'
+      WRITE(16,*)
+      WRITE(16,*) ' AREA LSFLAG MARGIN    CADJ    CAPREQ   SADJ',
+     @            ' SYSCON  SYSOWN  TRNSFR'
+      WRITE(16,*) ' ---- ------ ------    ----    ------   ----',
+     @            ' ------  ------  ------'
+      DO 10 J = 1, NOAREA
+  10  WRITE(16,1010) J,LSFLG(J),MARGIN(J),CADJ(J),CAPREQ(J),SADJ(J),
+     @               SYSCON(J),SYSOWN(J),TRNSFR(J)
+1010  FORMAT(3X,I2,4X,I1,2X,I6,4X,6X,F5.2,5(2X,F5.2))
+      WRITE(16,*)
+      WRITE(16,*) ' UNIT CLASS JNTOWN   AVAIL   DERATE PCTAVL PLNDST',
+     @            ' RATING RANDG'
+      WRITE(16,*) ' ---- ----- ------   -----   ------ ------ ------',
+     @            ' ------ -----'
+      DO 20 J = 1, NUNITS
+  20  WRITE(16,1020) J,ICLASS(J),JNTOWN(J),AVAIL(J),DERATE(J),
+     @               PCTAVL(J),PLNDST(J),RATING(J),RANDG(J)
+1020  FORMAT(2X,I3,3X,I2,3X,I2,6X,4(2X,F5.2),2X,F7.2,2X,F6.4)
+      WRITE(16,*)
+      WRITE(16,*)' LINE LNCAP LNSTAT RANDL'
+      WRITE(16,*)' ---- ----- ------ -----'
+      DO 30 L = 1, NLINES
+  30  WRITE(16,1030) L,LNCAP(L),LNSTAT(L),RANDL(L)
+1030  FORMAT(3X,I2,2X,I4,3X,I2,3X,F5.4)
+
+      RETURN
+      END
+
+
+      SUBROUTINE ECHOER
+
+C LAST UPDATE: 07/09/88 PJW
+
+      INCLUDE 'NARPERC.txt'
+
+      WRITE(16,*) '      PEAK LOADS'
+      WRITE(16,*) '      -------------------------------------------'
+      WRITE(16,1000) (PKLOAD(J),J=1,NOAREA)
+      WRITE(16,*) '      -------------------------------------------'
+ 1000 FORMAT( (5X,F12.4))
+      WRITE(16,*)
+      WRITE(16,*) '     UNIT  RATING  DERATED  CLASS',
+     @            '         PLANNED OUTAGES'
+      WRITE(16,*) '     ----  ------  -------  -----',
+     @            ' ------------------------------'
+      DO 10 I=1,NUNITS
+   10 WRITE(16,1002) I,RATING(I),DERATE(I),ICLASS(I),(IDATES(I,K),
+     @               K=1,4)
+ 1002 FORMAT(6X,I3,2X,2X,F6.1,2X,F6.1,6X,I1,4(1X,I7))
+      WRITE(16,*)
+      WRITE(16,*) '     WEEKLY SCHEDULE OF PLANNED OUTAGES'
+      WRITE(16,*) '     ----------------------------------'
+      DO 20 I=1,52
+  20  WRITE(16,1003) I,(JPLOUT(I,J),J=1,30)
+1003  FORMAT(5X,I2,3X,30I4)
+      WRITE(16,*)
+      WRITE(16,*) '     UNIT       TRANSITIONS      QUARTERLY RATINGS'
+      WRITE(16,*) '     ----       -----------      -----------------',
+     @            '--------------------'
+      DO 25 I=1,NUNITS
+  25  WRITE(16,1004) I,(PROBG(I,J),J=1,2),(RATES(I,N),N=1,4)
+1004  FORMAT(5X,I3,5X,2(2X,F6.4),5X,4(2X,F6.1))
+      WRITE(16,*)
+      WRITE(16,*) '     LINE PROBABILITIES'
+      WRITE(16,*) '     ------------------'
+      WRITE(16,1005) (PROBL(K,1), K = 1,5)
+1005  FORMAT(5(3X,F6.4),/,/)
+      WRITE(16,*) '     DAILY SCHEDULE OF PEAK LOADS'
+      WRITE(16,*) '     ----------------------------'
+      DO 30 I=1,365
+  30  WRITE(16,1006) I,(DYLOAD(J,I),J=1,3)
+ 1006 FORMAT(5X,I3,3(4X,F16.2))
+      WRITE(16,*)
+      WRITE(16,*) '              HOURLY LOADS'
+      WRITE(16,*) '--------------------------------------------'
+      DO 40 I = 1, 8760, 24
+  40  WRITE(16,1007) I, (HRLOAD(1,M),M=I,I+23)
+ 1007 FORMAT(2X,I4,8(1X,F6.0),/,2(6X,8(1X,F6.0),/))
+
+      RETURN
+      END
+
 
 C!MS$NODEBUG
       SUBROUTINE SEEDER
@@ -298,28 +386,29 @@ C%%%  WRITE (16,1000)
 C1000 FORMAT(/,' ', 'ENTERING SUBROUTNE SEEDER',/)
       IGSEED(1) = JSEED
       DO 10 I = 1, NUNITS
-	    IGSEED(I) = IGSEED(I) * 9649599
-	    IF (IGSEED(I) .LT. 0) THEN
-	      IGSEED(I) = IGSEED(I) + 2147483647
-	      IGSEED(I)=IGSEED(I)+1
-	    END IF
-	    J = I + 1
-	    IGSEED(J) = IGSEED(I)
+	IGSEED(I) = IGSEED(I) * 9649599
+	IF (IGSEED(I) .LT. 0) THEN
+	  IGSEED(I) = IGSEED(I) + 2147483647
+	  IGSEED(I)=IGSEED(I)+1
+	END IF
+	J = I + 1
+	IGSEED(J) = IGSEED(I)
 C!      WRITE (16,1010) I, IGSEED(J)
 C 1010   FORMAT(5X,I3,5X,I12)
    10 CONTINUE
 
 C......Continue, Seeding Lines..........................................
 
+
       ILSEED(1) = IGSEED(NUNITS)
       DO 20 I = 1, NLINES
-	    ILSEED(I) = ILSEED(I) * 9649599
-	    IF (ILSEED(I) .LT. 0) THEN
-	      ILSEED(I) = ILSEED(I) + 2147483647
-	      ILSEED(I) = ILSEED(I) + 1
-	    END IF
-	    J = I + 1
-	    ILSEED(J) = ILSEED(I)
+	ILSEED(I) = ILSEED(I) * 9649599
+	IF (ILSEED(I) .LT. 0) THEN
+	  ILSEED(I) = ILSEED(I) + 2147483647
+	  ILSEED(I) = ILSEED(I) + 1
+	END IF
+	J = I + 1
+	ILSEED(J) = ILSEED(I)
 C!      WRITE(16,1010) I, ILSEED(J)
    20 CONTINUE
 
@@ -349,34 +438,33 @@ C......Draw a random number for each unit...............................
 
 
       DO 10 I = 1, NUNITS
-	    IGSEED(I) = IGSEED(I) * 65539
-	    IF (IGSEED(I) .LT. 0) THEN
-	      IGSEED(I) = IGSEED(I) + 2147483647
-	      IGSEED(I) = IGSEED(I) + 1
-	    END IF
-	    YFL = FLOAT(IGSEED(I))
-	    YFL = YFL * .4656613E-9
-	    RANDG(I) = YFL
-		
-C       WRITE(*,11)YFL
-C  11   FORMAT(10X,F8.6)
+	IGSEED(I) = IGSEED(I) * 65539
+	IF (IGSEED(I) .LT. 0) THEN
+	  IGSEED(I) = IGSEED(I) + 2147483647
+	  IGSEED(I) = IGSEED(I) + 1
+	END IF
+	YFL = FLOAT(IGSEED(I))
+	YFL = YFL * .4656613E-9
+	RANDG(I) = YFL
+C     WRITE(*,11)YFL
+C  11 FORMAT(10X,F8.6)
    10 CONTINUE
 
 C......Determine the State and Available Capacity for Each Generator....
 
       DO 20 I = 1, NUNITS
-	    IF (RANDG(I) .LT. PROBG(I,1)) THEN
-	       PCTAVL(I) = 1.0
-	    ELSE IF (RANDG(I) .LT. PROBG(I,2)) THEN
-	       PCTAVL(I) = DERATE(I)
-	    ELSE
-	       PCTAVL(I) = 0.0
+	IF (RANDG(I) .LT. PROBG(I,1)) THEN
+	  PCTAVL(I) = 1.0
+	ELSE IF (RANDG(I) .LT. PROBG(I,2)) THEN
+	  PCTAVL(I) = DERATE(I)
+	ELSE
+	  PCTAVL(I) = 0.0
 C         IF (I.EQ.1) WRITE(*,*)'UNIT 1, AREA 1 FAILED'
 C         IF (I.EQ.2) WRITE(*,*)'UNIT 2, AREA 1 FAILED'
 C         IF (I.EQ.33) WRITE(*,*)'UNIT 1, AREA 2 FAILED'
 
-	    ENDIF
-	    AVAIL(I) = PCTAVL(I) * RATING(I) * PLNDST(I)
+	ENDIF
+	AVAIL(I) = PCTAVL(I) * RATING(I) * PLNDST(I)
    20 CONTINUE
 
 C%%% set trace ......................................................
@@ -426,35 +514,35 @@ C1000 FORMAT(/,' ','ENTERING SUBROUTNE LSTATE')
 C......Draw a random number for each line...............................
 
       DO 10 I = 1, NLINES
-	    ILSEED(I) = ILSEED(I) * 65539
-	    IF (ILSEED(I) .LT. 0) THEN
-	      ILSEED(I) = ILSEED(I) + 2147483647
-	      ILSEED(I) = ILSEED(I) + 1
-	    END IF
+	ILSEED(I) = ILSEED(I) * 65539
+	IF (ILSEED(I) .LT. 0) THEN
+	  ILSEED(I) = ILSEED(I) + 2147483647
+	  ILSEED(I) = ILSEED(I) + 1
+	END IF
 C	WRITE(*,*)I,ILSEED(I)
-	    YFL = FLOAT(ILSEED(I))
+	YFL = FLOAT(ILSEED(I))
 C	WRITE(*,*)I,YFL
-	    YFL = YFL * .4656613E-9
+	YFL = YFL * .4656613E-9
 C	WRITE(*,*)I,YFL
-	    RANDL(I) = YFL
+	 RANDL(I) = YFL
    10 CONTINUE
 
 C......Determine the STATUS of each line................................
 
       DO 20 I = 1, NLINES
-	    IF (RANDL(I) .LE. PROBL(1,I)) THEN
-	      LNSTAT(I) = 1
-	    ELSE  IF (RANDL(I) .LE. PROBL(2,I)) THEN
-	      LNSTAT(I) = 2
-	    ELSE IF (RANDL(I) .LE. PROBL(3,I)) THEN
-	      LNSTAT(I) = 3
-	    ELSE IF (RANDL(I) .LE. PROBL(4,I)) THEN
-	      LNSTAT(I) = 4
-	    ELSE IF (RANDL(I) .LE. PROBL(5,I)) THEN
-	      LNSTAT(I) = 5
-	    ELSE
-	      LNSTAT(I) = 6
-	    ENDIF
+	IF (RANDL(I) .LE. PROBL(1,I)) THEN
+	  LNSTAT(I) = 1
+	ELSE  IF (RANDL(I) .LE. PROBL(2,I)) THEN
+	  LNSTAT(I) = 2
+	ELSE IF (RANDL(I) .LE. PROBL(3,I)) THEN
+	  LNSTAT(I) = 3
+	ELSE IF (RANDL(I) .LE. PROBL(4,I)) THEN
+	  LNSTAT(I) = 4
+	ELSE IF (RANDL(I) .LE. PROBL(5,I)) THEN
+	  LNSTAT(I) = 5
+	ELSE
+	  LNSTAT(I) = 6
+	ENDIF
 C     WRITE(*,1020) I,LNSTAT(I)
 C1020 FORMAT (' ','LINE =',I3,' STATE =',I2)
    20 CONTINUE
@@ -481,12 +569,12 @@ C......Initialize Pointers into EVNTS Array.............................
       N = MXCELL - 1
 
       DO 10 I = 1, MXCELL
-	     EVNTS(I) = 0.0
+	EVNTS(I) = 0.0
    10 CONTINUE
 
       DO 20 I = 1, N, 4
-	    J = I + 4
-	    EVNTS(I) = J
+	J = I + 4
+	EVNTS(I) = J
    20 CONTINUE
 
 C!    DO 30 I = 1, 100, 4
@@ -496,7 +584,6 @@ C! 30 CONTINUE
       RETURN
       END
 
-	  
 
       SUBROUTINE FILEM
 
@@ -527,7 +614,7 @@ C.....REDEFINE FIRST AVAILABLE ENTRY....................................
       MFA = EVNTS(MFA)
 C100  IF (IPOINT .GT. 0) THEN      THE 100 IS NOT USED ... GENE P. 1/26/89
       IF (IPOINT .GT. 0) THEN
-	    GOTO 110
+	GOTO 110
       END IF
 
 C.....FILE 1 IS EMPTY, SET FIRST POINTER TO NEW ENTRY, SUCCESSOR TO 0...
@@ -544,7 +631,7 @@ C.....FILE 1 CONTAINS ENTRIES, SYNCHRONIZE..............................
 
  110  J = IPOINT
       IF (ATRIB(1) .GT. EVNTS(J+1)) THEN
-	    GOTO 115
+	GOTO 115
       END IF
 
 C.....NEW ENTRY BECOMES FIRST ENTRY,....................................
@@ -564,10 +651,10 @@ C......NEW ENTRY GOES INTO MIDDLE OF FILE...............................
  115  K = J
       J = EVNTS(J)
       IF (J .EQ. 0) THEN
-	     GO TO 120
+	GO TO 120
       END IF
       IF (ATRIB(1) .GT. EVNTS(J+1)) THEN
-	    GO TO 115
+	GO TO 115
       END IF
 
 C.....FILE INTO MIDDLE - SET SUCCESSOR POINTER..........................
@@ -588,17 +675,13 @@ C.....NEW ENTRY BECOMES LAST IN FILE....................................
  120  EVNTS(K) = NEW
       EVNTS(NEW)=0
 
-	  
 C       DO 13 I=1,50
 C       WRITE(16,20)EVNTS(I)
 C  13   CONTINUE
 C       WRITE(16,5)IPOINT
-
       RETURN
       END
 
-
-	  
 
       SUBROUTINE REMOVE
 
@@ -610,9 +693,9 @@ C%%%  WRITE(16,1000)
 C1000 FORMAT(/,' ',' REMOVING EVENT FROM EVENT LIST',/)
 
       IF (NUMINQ .LE. 0) THEN
-	    WRITE(16,1001)
+	WRITE(16,1001)
  1001   FORMAT(' ','ERROR IN REMOVE, EVENTS LIST IS EMPTY')
-	    STOP
+	STOP
       END IF
 
 C......REMOVE ENTRY FROM EVNTS ARRAY ...................................
@@ -628,13 +711,13 @@ C1009 FORMAT(' ', 'ATRIB VECTOR IS:  ',2F12.2)
 
 C......UPDATE FILE POINTERS...FIRST UPDATE MFA..........................
 
-      MFA = IPOINT
-      EVNTS(IPOINT + 1) = 0.
-      EVNTS(IPOINT + 2) = 0.
+       MFA = IPOINT
+       EVNTS(IPOINT + 1) = 0.
+       EVNTS(IPOINT + 2) = 0.
 
 C......FIRST POSITION POINTER..ITEM ALWAYS REMOVED FROM FIRST POSITION
 
-	  IPOINT = EVNTS(IPOINT)
+	IPOINT = EVNTS(IPOINT)
 
 C     WRITE(16,1010) IPOINT, NUMINQ
 C1010 FORMAT(' ',' IPOINT = ',I3,' NUMINQ = ',I3)
@@ -643,7 +726,6 @@ C1010 FORMAT(' ',' IPOINT = ',I3,' NUMINQ = ',I3)
       END
 
 
-	  
       SUBROUTINE CONTRL(RFLAG)
 
 C:::::LAST UPDATE: 6/16/88
@@ -657,7 +739,7 @@ C......PULLS THE NEXT EVENT FROM FILE AND CHECKS TIME. EVENTS IS CALLED.
 C......UNLESS END OF SIMULATION IS REACHED, THEN REPORT IS CALLED.......
 
    10 IF (IPOINT .EQ. 0) THEN
-	    WRITE(16,1001)
+	WRITE(16,1001)
  1001   FORMAT(/,' ',' ERROR: POINTER TO EVENT FILE IS 0 AND CONTROL',
      +         ' HAS BEEN CALLED')
 C     WRITE (16,1109)
@@ -666,44 +748,38 @@ C1109 FORMAT(/,/,' ','ECHO CHECKING EVENTS ARRAY',/,/)
 C     DO 88 I = 1, 100, 4
 C  88 WRITE(16,1188) (EVNTS(J),J = I, I+3)
 C1188 FORMAT(4(5X,F7.2))
-
-	    RETURN
+	RETURN
       END IF
 
       IF (CLOCK .GT. EVNTS(IPOINT+1)) THEN
-	    WRITE(16,1010) ATRIB(1), ATRIB(2)
+	WRITE(16,1010) ATRIB(1), ATRIB(2)
  1010   FORMAT(' ','ERROR: NEXT EVENT TO OCCUR SCHEDULED PRIOR TO ',
-        +         'CURRENT TIME. ',/,5X,'ATRIB VECTOR IS ',2(F12.2,5X))
+     +         'CURRENT TIME. ',/,5X,'ATRIB VECTOR IS ',2(F12.2,5X))
 
-	    WRITE (16,1020) EVNTS(IPOINT+1),EVNTS(IPOINT+2)
+	WRITE (16,1020) EVNTS(IPOINT+1),EVNTS(IPOINT+2)
  1020   FORMAT(' ','PENDING EVENTS ATRIB VECTOR IS ',2(F12.2,5X))
- 
-	    RETURN
+	RETURN
       ELSE
-	    CONTINUE
+	CONTINUE
       END IF
-	  
       IF(RFLAG.EQ.1.0) THEN
        RETURN
       ELSE
        CONTINUE
       END IF
-	  
       IF (EVNTS(IPOINT+1) .GT. (FINISH+1.0)) THEN
-	    IYEAR = CLOCK/8760.D0
-	    CALL REPORT(IYEAR)
-	    RETURN
+	IYEAR = CLOCK/8760.D0
+	CALL REPORT(IYEAR)
+	RETURN
       ELSE
-	    CALL REMOVE
-	    CLOCK = ATRIB(1)
-	    NUMBER = ATRIB(2)
-		
+	CALL REMOVE
+	CLOCK = ATRIB(1)
+	NUMBER = ATRIB(2)
 C       WRITE(16,1002) CLOCK,NUMBER
 C1002   FORMAT(' ',' SIMULATION CLOCK UPDATED TO: ',F12.0,/,
 C    +       ' ',' FOR EVENT TYPE: ',I2)
-
-	    CALL EVENTS(NUMBER,RFLAG)
-CH      CALL EVENTS
+	CALL EVENTS(NUMBER,RFLAG)
+CH        CALL EVENTS
       END IF
 
       GO TO 10
@@ -737,7 +813,6 @@ C1000 FORMAT(/,' ',' EVENTS CALLED WITH ARGUMENT = ',I2)
       RETURN
       END
 
-	  
 
       SUBROUTINE WEEK
 C:::::LAST UPDATE: 7/06/88
@@ -750,62 +825,52 @@ C1000 FORMAT (' ','SUBROUTNE WEEK CALLED')
       ATRIB(1) = CLOCK + 168
       CALL FILEM
       DO 10 I = 1, NUNITS
-	    PLNDST(I) = 1.0
+	PLNDST(I) = 1.0
    10 CONTINUE
-   
       JWEEK = JHOUR/168 + 1
 C      WRITE(*,*)JWEEK,JHOUR
-      IF(JWEEK.GT.52) RETURN
-	  
+      IF(JWEEK.GT.52)RETURN
       MT=JPLOUT(JWEEK,1)+1
       IF (MT.EQ.1) RETURN
-	  
 C     WRITE(16,*)
 C     WRITE(16,*)' SCHEDULED OUT THIS WEEK '
 C     WRITE(16,*)' ================================================'
 C     WRITE (16,1010) JWEEK,(JPLOUT(JWEEK,M),M=2,MT)
 C1010  FORMAT (' WEEK ',I3,5X,12(I2,2X))
-       
-	  DO 20 M = 2,MT
-	    J = JPLOUT(JWEEK,M)
-	    PLNDST(J) = 0.0
+       DO 20 M = 2,MT
+	  J = JPLOUT(JWEEK,M)
+	  PLNDST(J) = 0.0
   20  CONTINUE
-  
       RETURN
       END
 
-	  
 
        SUBROUTINE FINDLD(NFACT)
 
 C:::::LAST UPDATE: 6/18/88
 
       INCLUDE 'NARPERC.txt'
-	  
 C     WRITE(*,1000) JDAY
 C1000 FORMAT (/,' ','ENTERING SUBROUTNE FINDLD, JDAY =',I4)
 C      WRITE(*,*)JHOUR,JDAY
 C......NFACT IS THE NUMBER OF THE FORECAST ERROR FACTOR TO BE USED......
 C......CAPREQ(J) IS PASSED TO TRANSMISSION MODULE.......................
-
       DO 10 J = 1, NOAREA
-	  
 C       IF (NFACT.GT.1) THEN
 C       WRITE(*,1010) J,HRLOAD(J,JHOUR),PKLOAD(J),FCTERR(J,NFACT)
 C1010   FORMAT (' ','FOR AREA ',I2,' HRLOAD = ',F7.5,' PKLOAD =',
 C    @  F6.0,' FCTERR = ',F6.2)
 C       ENDIF
-
-	    CAPREQ(J) = HRLOAD(J,JHOUR)  * FCTERR(J,NFACT)
+	CAPREQ(J) = HRLOAD(J,JHOUR)  * FCTERR(J,NFACT)
    10 CONTINUE
 
 C       WRITE (16,1001) CLOCK
 C1001   FORMAT(' ',' AT TIME: ',F12.2)
 
       DO 20 J = 1, NOAREA
-	    IF (NFACT.GT.1) THEN
-C         WRITE(16,1002) J, CAPREQ(J)
-	    ENDIF
+	IF (NFACT.GT.1) THEN
+C       WRITE(16,1002) J, CAPREQ(J)
+	ENDIF
 C1002   FORMAT(' ',' CAPACITY REQUIRED FOR AREA ',I2,' = ',F12.4)
    20 CONTINUE
 
@@ -828,22 +893,21 @@ C......TRNSFR STORES NET TRANSFER TO (FROM) REST OF POOL................
 C......TRANSFERS TREATED AS FROM HIGHER TO LOWER AREA NUMBER...........
 
       DO 5 I=1,NOAREA
-         TRNSFR(I)=0.
+      TRNSFR(I)=0.
  5    CONTINUE
- 
       DO 10 J2 = 1, NOAREA
-	    DO 10 J1 = 1, NOAREA
-	      IF (JENT(J1,J2) .GT. 0) THEN
-	        JPOINT = JENT(J1,J2)
-		    TRNSFR(J1) =TRNSFR(J1)+INTCH(JPOINT,JDAY)
-	        TRNSFR(J2) =TRNSFR(J2)-INTCH(JPOINT,JDAY)
-	      END IF
+	DO 10 J1 = 1, NOAREA
+	  IF (JENT(J1,J2) .GT. 0) THEN
+	    JPOINT = JENT(J1,J2)
+	    TRNSFR(J1) =TRNSFR(J1)+INTCH(JPOINT,JDAY)
+	    TRNSFR(J2) =TRNSFR(J2)-INTCH(JPOINT,JDAY)
+	  END IF
    10 CONTINUE
-   
 C     DO 20 J = 1, NOAREA
 C       WRITE(*,1001) J, TRNSFR(J)
 C1001   FORMAT(' ',' AREA: ',I2,' TRANSFER: ',F12.2)
 C  20 CONTINUE
+
       RETURN
       END
 
@@ -859,24 +923,21 @@ C      WRITE(*,1000)IQ
 C 1000 FORMAT (' ','ENTERING SUBROUTNE QUARTR',I2)
       IF (IQ .EQ. 5) IQ = 1
       DO 5 I = 1, NOAREA
-        SUMAR4= 0.0
-        SUMAR3= 0.0
-        SUMAR2= 0.0
-        SUMAR1= 0.0
-        DO 4 J = 1, NOGEN(I)
-          SUMAR4 = SUMAR4 + RATES(J,4)
-          SUMAR3 = SUMAR3 + RATES(J,3)
-          SUMAR2 = SUMAR2 + RATES(J,2)
-    4     SUMAR1 = SUMAR1 + RATES(J,1)
+      SUMAR4= 0.0
+      SUMAR3= 0.0
+      SUMAR2= 0.0
+      SUMAR1= 0.0
+      DO 4 J = 1, NOGEN(I)
+      SUMAR4 = SUMAR4 + RATES(J,4)
+      SUMAR3 = SUMAR3 + RATES(J,3)
+      SUMAR2 = SUMAR2 + RATES(J,2)
+    4 SUMAR1 = SUMAR1 + RATES(J,1)
 C     WRITE(*,6) SUMAR1,SUMAR2,SUMAR3,SUMAR4
     5 CONTINUE
-	
 C   6 FORMAT(' ',' AREA RATINGS =',4(F7.1,1X))
-
       DO 10 I = 1, NUNITS
-	    RATING(I) = RATES(I,IQ)
-   10   CONTINUE
-   
+	RATING(I) = RATES(I,IQ)
+   10 CONTINUE
 C      WRITE(*,1001) CLOCK
  1001 FORMAT(' ',' AT TIME: ',F12.2,' QRTRLY RATING CHANGE COMPLETED')
 CC    ATRIB(1) = CLOCK + DFLOAT(NHRSYR)
@@ -887,7 +948,6 @@ CC    ATRIB(1) = CLOCK + DFLOAT(NHRSYR)
       RETURN
       END
 
-	  
 
        SUBROUTINE HOUR
 
@@ -928,20 +988,17 @@ C5533 FORMAT(' ','IN HOUR AT TIME ',F8.0)
 CH .......
       IF(JJ.EQ.0)JJ=1
       IF (JJ.EQ.1. OR . JFREQ.EQ.1) THEN
-	    CALL GSTATE
-	    CALL SUMCAP
-	    CALL LSTATE
-	    CALLS = 0.
-	    CALL FINDTN
+	  CALL GSTATE
+	  CALL SUMCAP
+	  CALL LSTATE
+	  CALLS = 0.
+	  CALL FINDTN
       ENDIF
-	  
 C STMULT(I,1) IS FORWARD DIRECTION ADJUSTMENT
 C STMULT(I,2) IS BACKWARD DIRECTION ADJUSTMENT
-
 	DO 22 I=1,NLINES
-	  DO 22 J=1,2
+	DO 22 J=1,2
    22   STMULT(I,J) = 1.0
-   
 C        WRITE(*,123) MXCRIT,(JCRIT(I),I=1,20)
 C  123   FORMAT(' ',' MXCRIT =',I4,/,'JCRIT ARRAY IS',/,
 C     @  10I7,/,10I7)
@@ -949,116 +1006,92 @@ C     @  10I7,/,10I7)
 	JPNT = 1
 
 	DO 23 I =1,MXCRIT
-	  IF (JCRIT(JPNT).EQ.0) THEN
+	IF (JCRIT(JPNT).EQ.0) THEN
 	    JPNT = JPNT+1
-	  ELSE
+	ELSE
 	    NOCRIT = JCRIT(JPNT+1)
 	    CRTVAL = 0.0
-		
 	    DO 124 II = 1,NOCRIT
-		
 C  HAD TO ADD THIS TEST ... PROGRAM LOGIC ERROR ... GENE P. 1/28/89
-
-	      IF(JCRIT(JPNT+1+II).GT.0.AND.JCRIT(JPNT+1+II).LE.500)THEN
-	        CRTVAL = CRTVAL + AVAIL(JCRIT(JPNT+1+II))
-	      ELSE
-	        IF(IGENE.EQ.0) WRITE(*,*)'LOGIC ERROR ... GENE P.'
-	        IGENE=1
-	      ENDIF
-  124   CONTINUE
-  
+	    IF(JCRIT(JPNT+1+II).GT.0.AND.JCRIT(JPNT+1+II).LE.500)THEN
+	    CRTVAL = CRTVAL + AVAIL(JCRIT(JPNT+1+II))
+	    ELSE
+	    IF(IGENE.EQ.0) WRITE(*,*)'LOGIC ERROR ... GENE P.'
+	    IGENE=1
+	    ENDIF
+  124       CONTINUE
 	    IF (CRTVAL.EQ.0.0) THEN
-		
 C MODIFY LINE CAPACITY - FORWARD
-
 		  STMULT(JCRIT(JPNT),1)=FLOAT(JCRIT(JPNT+NOCRIT+3))/100.
 		  STMULT(JCRIT(JPNT),2)=FLOAT(JCRIT(JPNT+NOCRIT+4))/100.
-		  
 C                 WRITE(*,1024) STMULT(JCRIT(JPNT),1),JCRIT(JPNT)
 C1024             FORMAT(' ',' CAPACITY REDUCED TO',F5.3,' FOR',I3)
-
 	    ENDIF
-		
 	    JPNT=JPNT+NOCRIT+5
-		
-	  ENDIF
-23  CONTINUE
-   
+	ENDIF
+   23   CONTINUE
 C      DO 99 I=1,3
 C      WRITE(*,*)STMULT(I,1),STMULT(I,2)
 C 99   CONTINUE
 C     WRITE(*,1003) NFCST
 C1003 FORMAT(' ',' THE NUMBER OF FORECASTS IS',I2)
-      
-	  
-	  DO 30 NST = 1, NFCST
-	  
+      DO 30 NST = 1, NFCST
 C 1010   FORMAT (' ','FINDLD CALLED WITH ARGUMENT OF',I3)
-
-	    CALL FINDLD(NST)
-	    FLAG = 0.0
-	    FLAG2 = 0.0
-		
-	    DO 10 J = 1, NOAREA
-		
+	CALL FINDLD(NST)
+	FLAG = 0.0
+	FLAG2 = 0.0
+	DO 10 J = 1, NOAREA
 C          IF (NST.GT.1) THEN
 C          WRITE(*,1015) SYSCON(J), CAPREQ(J)
 C          ENDIF
 C 1015     FORMAT(' ','SYSCON = ',F8.1,'CAPREQ = ',F8.1)
-
-	      MARGIN(J) = IFIX(SYSCON(J) - CAPREQ(J))
-	      JMJ = IFIX(SYSOWN(J) - CAPREQ(J))
-	      IF (JMJ .LT. 0) FLAG2 = 1.
-	      IF (MARGIN(J) .LT. 0) THEN
-	         FLAG = FLAG + 1.0
-	         IT = J
-	      END IF
-		  
+	  MARGIN(J) = IFIX(SYSCON(J) - CAPREQ(J))
+	  JMJ = IFIX(SYSOWN(J) - CAPREQ(J))
+	  IF (JMJ .LT. 0) FLAG2 = 1.
+	  IF (MARGIN(J) .LT. 0) THEN
+	    FLAG = FLAG + 1.0
+	    IT = J
+	  END IF
 C         IF (FLAG .GT. 0.) THEN
 C         WRITE(*,1020) (MARGIN(JJ),JJ=1,NOAREA),FLAG
 C         ENDIF
 C1020     FORMAT (' ','MARGINS ARE',3(I8,3X),' FLAG IS',F4.0)
-   10   CONTINUE
+   10  CONTINUE
 
 C         IF (FLAG .GT. 0.) THEN
 C         WRITE(*,1020) (MARGIN(JJ),JJ=1,NOAREA),FLAG
 C         ENDIF
-
-          IF (FLAG .EQ. 0.0) THEN
+       IF (FLAG .EQ. 0.0) THEN
 C        WRITE (16,2224)
 C2224    FORMAT (' ','RETURNING: NO LOSS')
-	         RETURN
-          ELSE
-          END IF
+	 RETURN
+      ELSE
+      END IF
 
-          NSHRT = IFIX(FLAG)
-          IF (NSHRT .EQ. NOAREA) GO TO 6767
-		  
-          IF (FLAG .GT. 1.0) THEN
-	        CONTINUE
-			
-C         IF (CALLS .NE. 0.) THEN
-
-          ELSE
-	        NEED = ABS(MARGIN(IT))
-	        DO 20 J = 1, NOAREA
-	          IF (MARGIN(J) .GT. 0) THEN
-	            N = LINENO(J,IT)
-	            IF (N .GT. 0) THEN
-		          M =(LNSTAT(N)-1)*3+2
-		          IF (LP(N,2).EQ.J) THEN
-		             XX = BLPA(N,M)
-		             LNCAP(N) = IFIX(XX)
-		          ELSE
-		             XX = BLPA(N,M+1)
-		             LNCAP(N) = IFIX(XX)
-		          ENDIF
-	              MXHELP = MIN(MARGIN(J),LNCAP(N))
-	              NEED = NEED - MXHELP
-	            END IF
-	          END IF
-   20       CONTINUE
-   
+      NSHRT = IFIX(FLAG)
+      IF (NSHRT .EQ. NOAREA) GO TO 6767
+      IF (FLAG .GT. 1.0) THEN
+	CONTINUE
+C          IF (CALLS .NE. 0.) THEN
+      ELSE
+	NEED = ABS(MARGIN(IT))
+	DO 20 J = 1, NOAREA
+	  IF (MARGIN(J) .GT. 0) THEN
+	    N = LINENO(J,IT)
+	    IF (N .GT. 0) THEN
+		M =(LNSTAT(N)-1)*3+2
+		IF (LP(N,2).EQ.J) THEN
+		   XX = BLPA(N,M)
+		   LNCAP(N) = IFIX(XX)
+		ELSE
+		   XX = BLPA(N,M+1)
+		   LNCAP(N) = IFIX(XX)
+		ENDIF
+	    MXHELP = MIN(MARGIN(J),LNCAP(N))
+	    NEED = NEED - MXHELP
+	    END IF
+	  END IF
+   20    CONTINUE
 C ********************************************************************
 C   HEURISTIC NETWORK FLOW CHECK (SIMPLIFIED TRANSPORTATION MODEL)
 C   TO ENABLE, CHANGE THE CH'S TO BLANKS
@@ -1069,28 +1102,21 @@ CH               RETURN
 CH             END IF
 C   END OF HEURISTIC NETWORK FLOW CHECK
 C ********************************************************************
-
-          END IF
-		 
-	      DO 24 J = 1, NOAREA
-		 
+      END IF
+	 DO 24 J = 1, NOAREA
 C            WRITE(16,1024) MARGIN(J),SYSCON(J),CAPREQ(J),TRNSFR(J),
 C    @                      SADJ(J)
 C1024        FORMAT(5X,I8,4(5X,F10.2))
-
-	        IF (MARGIN(J).LT.0) TEMPFL = 1.
-   24     CONTINUE
-   
+	     IF (MARGIN(J).LT.0) TEMPFL = 1.
+   24    CONTINUE
 C         WRITE(*,1038) IFLAG,JFLAG
 C1038     FORMAT(' CALLING TRANSM, IFLAG = ',I1,' JFLAG = ',I1)
-
-	     JFLAG=0
-	     CALL TRANSM(IFLAG,JFLAG)
-	     CALLS = 1.
-	     IF (IFLAG .EQ. 0) IFLAG = 1
-	     IF(JFLAG.EQ.0)RETURN
-	     TEMPFL=0.
-		 
+	  JFLAG=0
+	  CALL TRANSM(IFLAG,JFLAG)
+	  CALLS = 1.
+	  IF (IFLAG .EQ. 0) IFLAG = 1
+	  IF(JFLAG.EQ.0)RETURN
+	 TEMPFL=0.
 C        WRITE(16,*)
 C        WRITE(16,1026) CLOCK
 C1026    FORMAT(' TXMOD CALLED AT TIME: ',F6.0)
@@ -1100,31 +1126,23 @@ C    @               'TRNSFR        SADJ'
 C        WRITE(16,*) '     --------     ----------     ----------     ',
 C    @               '---------     ----------'
 
-	     DO 25 J = 1, NOAREA
-	       ZZ =  - SADJ(J)
-	       MARGIN(J) = IFIX(ZZ)
-		   
+	 DO 25 J = 1, NOAREA
+	   ZZ =  - SADJ(J)
+	   MARGIN(J) = IFIX(ZZ)
 C            WRITE(16,1025) MARGIN(J),SYSCON(J),CAPREQ(J),TRNSFR(J),
 C    @                      SADJ(J)
 C1025        FORMAT(5X,I8,4(5X,F10.2))
-
-	       IF (MARGIN(J).LT.0) TEMPFL = 1.
+	     IF (MARGIN(J).LT.0) TEMPFL = 1.
    25    CONTINUE
-   
 C             WRITE(*,2626)(MARGIN(J),J=1,NOAREA)
 C 2626    FORMAT(5X,3I8,/)
-
-	     IF (TEMPFL.EQ.0) RETURN
-		 
- 6767    CALL HRSTAT(NST)
- 
+	 IF (TEMPFL.EQ.0) RETURN
+ 6767      CALL HRSTAT(NST)
 C          WRITE(16,1030)JHOUR,JDAY,MXPLHR(JDAY)
 C1030      FORMAT(' JHOUR = ',I5,' JDAY = ',I5,' MXPLHR = ',I5)
 CH ........
-
-	     IF (JHOUR.EQ.MXPLHR(JDAY)) CALL PKSTAT(NST)
+	   IF (JHOUR.EQ.MXPLHR(JDAY)) CALL PKSTAT(NST)
    30 CONTINUE
-   
       RETURN
       END
 
@@ -1156,8 +1174,8 @@ C......Split Capacity by Ownership......................................
       DO 10 I = 1, NUNITS
 C       WRITE(*,11)I,(CAPOWN(J,I),J=1,NOAREA)
 C  11   FORMAT(' ',' UNIT',I3,' OWNERSHIP:',3(F5.2,1X))
-	    DO 10 J = 1, NOAREA
-	      CAPAVL(J,I) = AVAIL(I) * CAPOWN(J,I)
+	DO 10 J = 1, NOAREA
+	  CAPAVL(J,I) = AVAIL(I) * CAPOWN(J,I)
    10 CONTINUE
 
 C......Sum the Capacity Owned by System.................................
@@ -1165,31 +1183,27 @@ C......Sum the Capacity Owned by System.................................
 C     WRITE(*,*) '     SYSOWN           CAPAVL'
 C     WRITE(*,*) '     -----------      -----------'
       DO 25 J = 1, NOAREA
-	     SYSOWN(J) = 0.0
-	     DO 20 I = 1, NUNITS
-   20      SYSOWN(J) = SYSOWN(J) + CAPAVL(J,I)
-C          WRITE(*,1020) SYSOWN(J),CAPAVL(I,J)
-C 1020     FORMAT(5X,2(F10.2,5X))
-   25 CONTINUE
+	SYSOWN(J) = 0.0
+	DO 20 I = 1, NUNITS
+   20 SYSOWN(J) = SYSOWN(J) + CAPAVL(J,I)
+C      WRITE(*,1020) SYSOWN(J),CAPAVL(I,J)
+C 1020    FORMAT(5X,2(F10.2,5X))
+   25  CONTINUE
 
 C      ICOUNT = 0
 C      DO 30 J = 1, NOAREA
 C        SYSCON(J) = 0.0
 C        DO 30 I = 1, NOGEN(J)
 C          ICOUNT = ICOUNT + 1
-C   30     SYSCON(J) = SYSCON(J) + AVAIL(ICOUNT)
-
+C   30 SYSCON(J) = SYSCON(J) + AVAIL(ICOUNT)
       DO 29 I=1,NOAREA
- 29     SYSCON(I)=0.0
- 
+ 29   SYSCON(I)=0.0
       DO 30 I=1,NUNITS
-        J=CAPCON(I)
- 30     SYSCON(J)=SYSCON(J)+AVAIL(I)
- 
+      J=CAPCON(I)
+ 30   SYSCON(J)=SYSCON(J)+AVAIL(I)
       DO 35 I=1,NOAREA
-        TRNSFJ(I)=SYSCON(I)-SYSOWN(I)
+      TRNSFJ(I)=SYSCON(I)-SYSOWN(I)
  35   CONTINUE
- 
 C       WRITE(*,1130)(AVAIL(31),AVAIL(63),AVAIL(95))
 C       WRITE(*,1130)(TRNSFJ(I),I=1,NOAREA)
 C 1130  FORMAT(10X,3(F8.1,3X))
@@ -1197,12 +1211,10 @@ C      WRITE(*,1110) (SYSCON(J),J=1,NOAREA)
 C      WRITE(*,1120) (SYSOWN(J),J=1,NOAREA)
 C 1110 FORMAT (' ','CAPACITIES CONTROLLED = ',3(F8.1,3X))
 C 1120 FORMAT (' ','CAPACITIES OWNED =      ',3(F8.1,3X))
-
       RETURN
       END
 
 
-	  
       SUBROUTINE PKSTAT(NST)
 
 C:::::LAST UPDATE: 7/09/88
@@ -1217,37 +1229,37 @@ C     WRITE(16,1212) NST,CLOCK
 C1212  FORMAT(' ',' PKSTAT CALLED; NST = ',I3,/,' ',' CLOCK =',F7.0)
 
 
-	  SUM = 0.0
-	  FLAG = 0.0
-	  DO 10 J = 1, NOAREA
-	    SUM = SUM + FLOAT(MARGIN(J))
-10    CONTINUE
+	SUM = 0.0
+	FLAG = 0.0
+	DO 10 J = 1, NOAREA
+	  SUM = SUM + FLOAT(MARGIN(J))
+   10  CONTINUE
 
 C.....SOMEBODY HAS A LOSS, ELSE WE WOULDN'T BE HERE............
 C.....UPDATE POOL PK LOLE......................................
 
-	  IF (SUM .GE. 0.) THEN
-	     LOLTPP(NST) = LOLTPP(NST) + 1
-      ELSE
-	      LOLGPP(NST) = LOLGPP(NST) + 1
-      ENDIF
+       IF (SUM .GE. 0.) THEN
+	  LOLTPP(NST) = LOLTPP(NST) + 1
+       ELSE
+	  LOLGPP(NST) = LOLGPP(NST) + 1
+       ENDIF
 
       DO 20 J = 1, NOAREA
-	     X = MARGIN(J)
-	     IF (X .LT. 0.0) THEN
+	 X = MARGIN(J)
+	 IF (X .LT. 0.0) THEN
 C           LSFLG(J) = 1
-	        FLAG = 1.0
-	        IF (SUM .GT. 0.0) THEN
-	           LOLTPA(J,NST) = LOLTPA(J,NST) + 1
-	           MGNTPA(J,NST) = MGNTPA(J,NST) + IFIX(-X)
-	           MGNTPP(NST) = MGNTPP(NST) + IFIX(-X)
-	        ELSE
-	           LOLGPA(J,NST) = LOLGPA(J,NST) + 1
-	           MGNGPA(J,NST) = MGNGPA(J,NST) + IFIX(-X)
-	           MGNGPP(NST) = MGNGPP(NST) + IFIX(-X)
-	        END IF
-	     END IF
-20   CONTINUE
+	   FLAG = 1.0
+	   IF (SUM .GT. 0.0) THEN
+	     LOLTPA(J,NST) = LOLTPA(J,NST) + 1
+	     MGNTPA(J,NST) = MGNTPA(J,NST) + IFIX(-X)
+	     MGNTPP(NST) = MGNTPP(NST) + IFIX(-X)
+	   ELSE
+	     LOLGPA(J,NST) = LOLGPA(J,NST) + 1
+	     MGNGPA(J,NST) = MGNGPA(J,NST) + IFIX(-X)
+	     MGNGPP(NST) = MGNGPP(NST) + IFIX(-X)
+	   END IF
+	 END IF
+   20 CONTINUE
 
 
        RETURN
@@ -1280,43 +1292,37 @@ C.....SOMEBODY HAS A LOSS, ELSE WE WOULDN'T BE HERE............
 C.....UPDATE POOL PK LOLE......................................
 
        IF (SUM .GE. 0.) THEN
-	     LOLTHP(NST) = LOLTHP(NST) + 1
+	  LOLTHP(NST) = LOLTHP(NST) + 1
        ELSE
-	     LOLGHP(NST) = LOLGHP(NST) + 1
+	  LOLGHP(NST) = LOLGHP(NST) + 1
        ENDIF
 
       DO 20 J = 1, NOAREA
-	    X = MARGIN(J)
-	    IF (X .LT. 0.0) THEN
-	      LSFLG(J) = LSFLG(J)+1
-		  
+	 X = MARGIN(J)
+	 IF (X .LT. 0.0) THEN
+	   LSFLG(J) = LSFLG(J)+1
 C         WRITE(13,888)(LSFLG(K),K=1,NOAREA)
 C 888     FORMAT(2X,15(I4,1X))
-
-	      FLAG = 1.0
-	      IF (SUM .GT. 0.0) THEN
-	        LOLTHA(J,NST) = LOLTHA(J,NST) + 1
-			
+	   FLAG = 1.0
+	   IF (SUM .GT. 0.0) THEN
+	     LOLTHA(J,NST) = LOLTHA(J,NST) + 1
 C             WRITE(*,887)J,LOLTHA(J,NST)
 C  887        FORMAT(' ',' AREA',I3,' LOLE YTD',I4)
-
-	        MGNTHA(J,NST) = MGNTHA(J,NST) + IFIX(-X)
-	        MGNTHP(NST) = MGNTHP(NST) + IFIX(-X)
-	      ELSE
-	        LOLGHA(J,NST) = LOLGHA(J,NST) + 1
-	        MGNGHA(J,NST) = MGNGHA(J,NST) + IFIX(-X)
-	        MGNGHP(NST) = MGNGHP(NST) + IFIX(-X)
-	      END IF
-	    END IF
+	     MGNTHA(J,NST) = MGNTHA(J,NST) + IFIX(-X)
+	     MGNTHP(NST) = MGNTHP(NST) + IFIX(-X)
+	   ELSE
+	     LOLGHA(J,NST) = LOLGHA(J,NST) + 1
+	     MGNGHA(J,NST) = MGNGHA(J,NST) + IFIX(-X)
+	     MGNGHP(NST) = MGNGHP(NST) + IFIX(-X)
+	   END IF
+	 END IF
    20 CONTINUE
-   
 C             WRITE(*,888)J,LOLGHA(J,NST)
 C  888        FORMAT(' ',' AREA',I3,' LOLE YTD',I4)
 
       RETURN
       END
 
-	  
 
 C      DESCRIPTION OF VARIABLES IN COMMON/TM
 C      LP(I,J)  I  ENTRY  NUMBER
@@ -1349,63 +1355,51 @@ C      AT ANY BUS WITH THE POSSIBLE TRANSFERS PROGRAM GOES INTO FULL STU
 C
 C      FLOWS(I)  CONTAINS LINE FLOWS COMPUTED BY TRANSM.
 C
-
-
-
        SUBROUTINE TRANSM(IFLAG,JFLAG)
        INCLUDE 'NARPERC.txt'
        DOUBLE PRECISION BLP
        REAL INJ,INJB,LOD,LODC,INJ1
        DIMENSION BLP(100,3),BNS(20,6)
-	   
        LCLOCK=CLOCK
        JHOUR=JHOUR
        IOI=IOI
        NN=NOAREA
        NL=NLINES
-	   
        IF(IFLAG.EQ.1)GO TO 200
-         DO 100 I=1,NL
-           BLP(I,1)=BLPA(I,1)
-           BLP(I,2)=BLPA(I,2)
-           BLP(I,3)=BLPA(I,3)
- 100     CONTINUE
-         CALL TM1(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR)
+       DO 100 I=1,NL
+       BLP(I,1)=BLPA(I,1)
+       BLP(I,2)=BLPA(I,2)
+       BLP(I,3)=BLPA(I,3)
+ 100   CONTINUE
+       CALL TM1(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR)
  200   CONTINUE
- 
        DO 250 I=1,NL
-         L=(LNSTAT(I)-1)*3
-         BLP(I,1)=BLPA(I,L+1)
-         BLP(I,2)=BLPA(I,L+2)*STMULT(I,1)
-         BLP(I,3)=BLPA(I,L+3)*STMULT(I,2)
+       L=(LNSTAT(I)-1)*3
+       BLP(I,1)=BLPA(I,L+1)
+       BLP(I,2)=BLPA(I,L+2)*STMULT(I,1)
+       BLP(I,3)=BLPA(I,L+3)*STMULT(I,2)
  250   CONTINUE
- 
        IF(JFLAG.EQ.1)GO TO 500
-         NLST=NLS
-         NLS=1
-         DO 300 I=1,NN
-           BN(I,3)=TRNSFR(I)+TRNSFJ(I)
-           BN(I,2)=0.
-           BNS(I,1)=BN(I,3)
-           BNS(I,2)=BN(I,2)
-           BNS(I,5)=SYSCON(I)
-           BNS(I,6)=CAPREQ(I)
-           X=SYSCON(I)-CAPREQ(I)
-		   
-           IF(X.GE.0)GO TO 301
-             IF(X.GT.BN(I,3))BN(I,3)=X
-           GO TO 300
- 301       CONTINUE
- 
-           IF(BN(I,3).LT.0.)BN(I,3)=0.
- 300     CONTINUE
- 
-         CALL TM2(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR,FLOW,NLS,BNS,LCLOCK
+       NLST=NLS
+       NLS=1
+       DO 300 I=1,NN
+       BN(I,3)=TRNSFR(I)+TRNSFJ(I)
+       BN(I,2)=0.
+       BNS(I,1)=BN(I,3)
+       BNS(I,2)=BN(I,2)
+       BNS(I,5)=SYSCON(I)
+       BNS(I,6)=CAPREQ(I)
+       X=SYSCON(I)-CAPREQ(I)
+       IF(X.GE.0)GO TO 301
+       IF(X.GT.BN(I,3))BN(I,3)=X
+       GO TO 300
+ 301   CONTINUE
+       IF(BN(I,3).LT.0.)BN(I,3)=0.
+ 300   CONTINUE
+       CALL TM2(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR,FLOW,NLS,BNS,LCLOCK
      *,JHOUR,IOI,JFLAG,INDIC)
-	 
-         NLS=NLST
-         KFLAG=1
-		 
+       NLS=NLST
+       KFLAG=1
 C       READ STAGE 1 RESULTS FROM IMSL
 C       READ(14,*)LCL
 C 401   FORMAT(5X,'TRANSFERS ',I6,5X,I6 /)
@@ -1419,70 +1413,57 @@ C       READ(14,*)FLOW(I)
 C 406   CONTINUE
 C 407   CONTINUE
 C       IF(LCL.NE.LCLOCK)BACKSPACE 14
-
-         DO 400 I=1,NN
-           SADJ(I)=0.
-           SADJ(I)=SYSCON(I)-CAPREQ(I)-BN(I,2)
-           IF(SADJ(I).LT.0.)KFLAG=0
- 400     CONTINUE
- 
-         IF(KFLAG.EQ.1)GO TO 1000
-		 
-           JFLAG=1
-           DO 450 I=1,NN
-             CADJ(I)=BN(I,2)*NLS
- 450       CONTINUE
- 
+       DO 400 I=1,NN
+       SADJ(I)=0.
+       SADJ(I)=SYSCON(I)-CAPREQ(I)-BN(I,2)
+       IF(SADJ(I).LT.0.)KFLAG=0
+ 400   CONTINUE
+       IF(KFLAG.EQ.1)GO TO 1000
+       JFLAG=1
+       DO 450 I=1,NN
+       CADJ(I)=BN(I,2)*NLS
+ 450   CONTINUE
  500   CONTINUE
- 
        IF(NLS.EQ.0)GO TO 610
-         DO 600 I=1,NN
-           BN(I,3)=SYSCON(I)-CAPREQ(I)-CADJ(I)
-           BN(I,2)=CAPREQ(I)
-           BNS(I,1)=BN(I,3)
-           BNS(I,2)=BN(I,2)
-           BNS(I,4)=BN(I,4)
- 600     CONTINUE
- 
-         DO 700 I=1,NL
-           J=LP(I,2)
-           K=LP(I,3)
-           BLP(I,2)=BLP(I,2)-FLOW(I)
-           BLP(I,3)=BLP(I,3)+FLOW(I)
-           IF(BLP(I,2).LT.0.0) BLP(I,2)=0.
-           IF(BLP(I,3).LT.0.0) BLP(I,3)=0.
-           BN(J,4)=BN(J,4)+FLOW(I)
-           BN(J,5)=BN(J,5)-FLOW(I)
-           BN(K,4)=BN(K,4)-FLOW(I)
-           BN(K,5)=BN(K,5)+FLOW(I)
- 700     CONTINUE
+       DO 600 I=1,NN
+       BN(I,3)=SYSCON(I)-CAPREQ(I)-CADJ(I)
+       BN(I,2)=CAPREQ(I)
+       BNS(I,1)=BN(I,3)
+       BNS(I,2)=BN(I,2)
+       BNS(I,4)=BN(I,4)
+ 600   CONTINUE
+       DO 700 I=1,NL
+       J=LP(I,2)
+       K=LP(I,3)
+       BLP(I,2)=BLP(I,2)-FLOW(I)
+       BLP(I,3)=BLP(I,3)+FLOW(I)
+       IF(BLP(I,2).LT.0.0) BLP(I,2)=0.
+       IF(BLP(I,3).LT.0.0) BLP(I,3)=0.
+       BN(J,4)=BN(J,4)+FLOW(I)
+       BN(J,5)=BN(J,5)-FLOW(I)
+       BN(K,4)=BN(K,4)-FLOW(I)
+       BN(K,5)=BN(K,5)+FLOW(I)
+ 700   CONTINUE
        GO TO 620
  610   CONTINUE
- 
        DO 621 I=1,NN
-         BN(I,3)=SYSCON(I)-CAPREQ(I)-CADJ(I)
-         BN(I,2)=CAPREQ(I)
-         BNS(I,1)=BN(I,3)
-         BNS(I,2)=BN(I,2)
-         BNS(I,4)=BN(I,4)
+       BN(I,3)=SYSCON(I)-CAPREQ(I)-CADJ(I)
+       BN(I,2)=CAPREQ(I)
+       BNS(I,1)=BN(I,3)
+       BNS(I,2)=BN(I,2)
+       BNS(I,4)=BN(I,4)
  621   CONTINUE
- 
  620   CONTINUE
- 
        CALL TM2(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR,FLOW,NLS,BNS,LCLOCK
      *,JHOUR,IOI,JFLAG,INDIC)
-	 
  2626  FORMAT(10X,3F10.1)
- 
        DO 720 I=1,NN
-         BN(I,4)=BNS(I,4)
-         BN(I,5)=BNS(I,4)
+       BN(I,4)=BNS(I,4)
+       BN(I,5)=BNS(I,4)
  720   CONTINUE
- 
        DO 650 I=1,NN
-         SADJ(I)=BN(I,2)-SYSCON(I)+CAPREQ(I)+CADJ(I)
+       SADJ(I)=BN(I,2)-SYSCON(I)+CAPREQ(I)+CADJ(I)
  650   CONTINUE
- 
 C       WRITE(13,1001)(SADJ(I),I=1,3)
 C 1001  FORMAT(5X,3(F10.2,2X))
  1000  CONTINUE
@@ -1490,32 +1471,23 @@ C       IF(LCLOCK.EQ.5472)STOP
        RETURN
        END
 
-	   
-	   
 C      SUBROUTINE THETAC
 C      THIS SUBROUTINE GENERATES VECTOR THETC OF BUS ANGLES
 C      FOR ALL BUSES INCLUDING REF BUS.
 C      THET(I) CONTAINS ANGLE AT NODE I OF THE ADM MATRIX
 C      LT(I) CONTAINS THE ACTUAL NODE CORRESPONDING TO NODE
 C      I OF THE ADM MATRIX
-
        SUBROUTINE THETAC(THET,THETC,LT,NN)
        DIMENSION THET(20),THETC(20),LT(20)
        NX=NN-1
-	   
        DO 100 I=1,NN
-  100    THETC(I)=0.
-  
+  100  THETC(I)=0.
        DO 200 I=1,NX
-         J=LT(I)
-         THETC(J)=THET(I)
+       J=LT(I)
+       THETC(J)=THET(I)
   200  CONTINUE
-  
        RETURN
        END
-	   
-	   
-	   
 C*      SUBROUTINE ADMITB
 C       GENERATES YBUS MATRIX
 C       LP(I,J) J=1  LINE NUMBER
@@ -1523,35 +1495,26 @@ C               J=2  FROM NODE
 C               J=3  TO NODE
 C       BB(.,.) YBUS MATRIX
 
-
-
 	SUBROUTINE ADMITB(LP,BLP,BB)
 	DOUBLE PRECISION BB,BLP
 	DIMENSION LP(100,3),BLP(100,3),BB(20,20)
-	
 	DO 100 I = 1,20
-	  DO 100 J = 1,20
+	DO 100 J = 1,20
 100     BB(I,J)=0.0
-
 	I=1
-150 J=LP(I,2)
+150     J=LP(I,2)
 	K=LP(I,3)
 	BB(J,K)=BB(J,K) + BLP(I,1) * (-1.0)
 	BB(K,J)=BB(J,K)
 	BB(J,J)=BB(J,J)+BLP(I,1)
 	BB(K,K)=BB(K,K)+BLP(I,1)
 	I=I+1
-	
 C       END OF DATA DETECTED BY LINE #0
-
 	IF (LP (I,1) .EQ. 0) GO TO 200
 	GO TO 150
-	
 200     CONTINUE
 	RETURN
 	END
-	
-	
 C       SUBROUTINE XIMPA
 C       MODIFIES ZBUS MATRIX IF ZIJ ADDED BETWEEN NI,NJ
 C       ZB IS INPUT ZBUS MATRIX
@@ -1561,31 +1524,22 @@ C
 	SUBROUTINE XIMPA(ZB,Z,ZIJ,NI,NJ,NN)
 	DOUBLE PRECISION ZB,Z,ZIJ
 	DIMENSION ZB(20,20), Z(20,20),ZCOL(20)
-	
 C        WRITE(*,*)NI,NJ,ZIJ
 C        DO 100 I=1,NN
 C        WRITE(*,*)(ZB(I,J),J=1,NN)
 C 100    CONTINUE
-
 	DO 250 I= 1, NN
 250     ZCOL(I)=ZB(I,NI)-ZB(I,NJ)
-
 	ZN1=ZB(NI,NI)+ZB(NJ,NJ)-2.0*ZB(NI,NJ)-ZIJ
-	
 	DO 300 I=1,NN
-	  DO 300 J=1,NN
-	    Z(I,J)=ZB(I,J)-(ZCOL(I)*ZCOL(J))/ZN1
-300 CONTINUE
-
+	DO 300 J=1,NN
+	Z(I,J)=ZB(I,J)-(ZCOL(I)*ZCOL(J))/ZN1
+300     CONTINUE
 C       DO 101 I=1,NN
 C       WRITE(*,*)(Z(I,J),J=1,NN)
 C101    CONTINUE
-
 	RETURN
 	END
-	
-	
-	
 C       SUBROUTINE XIMPAR
 C       MODIFIES ZBUS MATRIX IF ZIJ ADDED BETWEEN NI AND REF
 C
@@ -1597,24 +1551,18 @@ C        WRITE(*,*)NI,ZIJ
 C        DO 100 I=1,NN
 C        WRITE(*,*)(ZB(I,J),J=1,NN)
 C 100    CONTINUE
-
 	DO 250 I=1,NN
  250    ZCOL(I)=ZB(I,NI)
-	
 	ZN1=ZB(NI,NI)-ZIJ
 	DO 300 I=1,NN
-	  DO 300 J=1,NN
-	    Z(I,J)=ZB(I,J)-(ZCOL(I)*ZCOL(J))/ZN1
- 300 CONTINUE
- 
+	DO 300 J=1,NN
+	Z(I,J)=ZB(I,J)-(ZCOL(I)*ZCOL(J))/ZN1
+ 300    CONTINUE
 C        DO 101 I=1,NN
 C        WRITE(*,*)(Z(I,J),J=1,NN)
 C 101    CONTINUE
-
 	RETURN
 	END
-	
-	
 C       SUBROUTINE THETA
 C       COMPUTES NODE ANGLES FOR NODES OF ZBUS MATRIX
 C        Z   ZBUS MATRIX
@@ -1627,14 +1575,11 @@ C
 	REAL INJ
 	DIMENSION Z(20,20), INJ(20), THET(20)
 	DO 350 I=1,NN
-	  THET(I)=0.
-	  DO 350 J=1,NN
+	THET(I)=0.
+	DO 350 J=1,NN
 350     THET(I)=THET(I)+Z(I,J)*INJ(J)
 	RETURN
 	END
-	
-	
-	
 C       SUBROUTINE FLO
 C       COMPUTES LINE FLOWS
 C       BLP(I,J)
@@ -1647,8 +1592,8 @@ C
 	DOUBLE PRECISION BLP
 	DIMENSION LP(100,3),BLP(100,3),FLOW(100),THET(20),SFLOW(20)
 	I=1
-400 J=LP(I,2)
-	K=LP(I,3)  
+400     J=LP(I,2)
+	K=LP(I,3)
 	FLOW(I)=(THET(J)-THET(K))*BLP(I,1)
 	SFLOW(K)=SFLOW(K)+FLOW(I)
 	SFLOW(J)=SFLOW(J)-FLOW(I)
@@ -1657,51 +1602,36 @@ C
 	GO TO 400
 450     RETURN
 	END
-	
-	
-	
 
 C       * SUBROUTINE TO TAKE INVERSE
 C       Y CONTAINS INVERSE
 	SUBROUTINE MINV(Y,N)
 	DOUBLE PRECISION Y,Z,PIV,X,PM
 	DIMENSION Y(20,20),Z(20,40)
-	
 	DO 100 I=1,N
-	  DO 100 J=1,N
-	    Z(I,J)=Y(I,J)
-	    Z(I,J+N)=0.0
-	    IF(I.EQ.J)Z(I,J+N)=1.0
-100 CONTINUE
-
+	DO 100 J=1,N
+	Z(I,J)=Y(I,J)
+	Z(I,J+N)=0.0
+	IF(I.EQ.J)Z(I,J+N)=1.0
+  100   CONTINUE
 	DO 200 I=1,N
-	  PIV=Z(I,I)
-	  
-	  DO 300 J=1,N
-	    IF(I.EQ.J)GO TO 450
-		
-	      PM=Z(J,I)/PIV
-		
-	      DO 400 K=I+1,N+I
-	        Z(J,K)=Z(J,K)-Z(I,K)*PM
-400       CONTINUE
-
-450     CONTINUE
-300   CONTINUE
-
-200 CONTINUE
-
+	PIV=Z(I,I)
+	DO 300 J=1,N
+	IF(I.EQ.J)GO TO 450
+	PM=Z(J,I)/PIV
+	DO 400 K=I+1,N+I
+	Z(J,K)=Z(J,K)-Z(I,K)*PM
+  400   CONTINUE
+  450   CONTINUE
+  300   CONTINUE
+  200   CONTINUE
 	DO 600 I=1,N
-	  X=Z(I,I)
-	  DO 600 J=1,N
-	    Y(I,J)=Z(I,J+N)/X
-600 CONTINUE
-
+	X=Z(I,I)
+	DO 600 J=1,N
+	Y(I,J)=Z(I,J+N)/X
+  600   CONTINUE
 	RETURN
 	END
-	
-	
-	
 C       SUBROUTINE ADMITR
 C       REMOVES REF NODE
 C       BB AT INPUT CONTAINS ENTIRE YBUS MAT
@@ -1718,37 +1648,28 @@ C
 	DOUBLE PRECISION BB,BT
 	DIMENSION BB(20,20),BT(20,20),BN(20,5),LT(20)
 	REAL INJ(20),INJB(20)
-	
 	NX=NN-1
 	II=0
-	
 	DO 110 I=1,NN
-	  IF(I.EQ.NR)GO TO 110
-	  II=II+1
-	  LT(II)=BN(I,1)
-	  III=0
-	  DO 100 J=1,NN
-	    IF(J.EQ.NR)GO TO 100
-	    III=III+1
-	    BT(II,III)=BB(I,J)
-100   CONTINUE
-110 CONTINUE
-
+	IF(I.EQ.NR)GO TO 110
+	II=II+1
+	LT(II)=BN(I,1)
+	III=0
+	DO 100 J=1,NN
+	IF(J.EQ.NR)GO TO 100
+	III=III+1
+	BT(II,III)=BB(I,J)
+  100   CONTINUE
+  110   CONTINUE
 	DO 200 I=1,NN
-	  DO 200 J=1,NN
+	DO 200 J=1,NN
   200   BB(I,J)=0.0
-  
 	DO 300 I=1,NX
-	  DO 300 J=1,NX
+	DO 300 J=1,NX
  300    BB(I,J)=BT(I,J)
- 
 	LT(NX+1)=NR
-	
 	RETURN
 	END
-	
-	
-	
 C       SUBROUTINE ASSIGN
 C       ASSIGNS INJECTIONS AT BUSES SO AS TO BALANCE
 C       POSITIVE AND NEGATIVE INJECTIONS
@@ -1762,65 +1683,50 @@ C
 	SUBROUTINE ASSIGN(INJ,INJ1,LOD,LODC,LT,NN,NLS)
 	REAL INJ,INJ1,LOD,LODC
 	DIMENSION INJ(20),INJ1(20),LOD(20),LODC(20),LT(20)
-	
 	DO 50 I=1,NN
-	  INJ1(I)=INJ(I)
- 50 CONTINUE
- 
+	INJ1(I)=INJ(I)
+ 50     CONTINUE
 	SUMP=0.
 	SUMN=0.
-	
 	DO 100 I=1,NN
 C        WRITE(*,*)SUMP,SUMN,INJ1(I)
-	  IF(INJ1(I).GT.0)GO TO 150
-	    SUMN=SUMN+INJ1(I)
-	    GO TO 100
- 150  SUMP=SUMP+INJ1(I)
- 100  CONTINUE
- 
+	IF(INJ1(I).GT.0)GO TO 150
+	SUMN=SUMN+INJ1(I)
+	GO TO 100
+ 150    SUMP=SUMP+INJ1(I)
+ 100    CONTINUE
 	SUMN=ABS(SUMN)
 	IF(SUMN.GT.SUMP)GO TO 300
-	  DO 200 I=1,NN
-	    IF(INJ1(I).LE.0.)GO TO 200
-	      INJ1(I)=INJ1(I)*SUMN/SUMP
+	DO 200 I=1,NN
+	IF(INJ1(I).LE.0.)GO TO 200
+	INJ1(I)=INJ1(I)*SUMN/SUMP
  200    CONTINUE
-	    
-	  GO TO 400
-	  
- 300  CONTINUE
- 
+	GO TO 400
+ 300    CONTINUE
 	IF(NLS.EQ.0)GO TO 1000
-	
-	  DO 350 I=1,NN
-	    IF(INJ1(I).GT.0)GO TO 350
-	      PINT=INJ1(I)
-	      INJ1(I)=INJ1(I)*SUMP/SUMN
-	      J=LT(I)
-	      LODC(J)=INJ1(I)-PINT
+	DO 350 I=1,NN
+	IF(INJ1(I).GT.0)GO TO 350
+	PINT=INJ1(I)
+	INJ1(I)=INJ1(I)*SUMP/SUMN
+	J=LT(I)
+	LODC(J)=INJ1(I)-PINT
  350    CONTINUE
- 
-	  GO TO 400
-	
- 1000 CONTINUE
- 
+	GO TO 400
+ 1000   CONTINUE
 	SUML=0.
 	DO 1400 I=1,NN
-	  SUML=SUML+LOD(I)
+	SUML=SUML+LOD(I)
  1400   CONTINUE
- 
 	DIFF=SUMN-SUMP
 	DO 1500 I=1,NN
-	  J=LT(I)
-	  LODC(J)=LOD(J)*DIFF/SUML
-	  INJ1(I)=INJ1(I)+LODC(J)
+	J=LT(I)
+	LODC(J)=LOD(J)*DIFF/SUML
+	INJ1(I)=INJ1(I)+LODC(J)
  1500   CONTINUE
- 
  400    CONTINUE
 	RETURN
 	END
 
-	
-	
 C       SUB CONNLS
 C       FORMULATES CONSTRAINTS FOR NO LOSS SHARING
 C
@@ -1831,224 +1737,189 @@ C
 	DIMENSION A(200,250),BC(20,20),INJ(20),IBAS(250),XOB(250)
      *  ,IEQ(20),BN(20,5),LOD(20),XOBI(2,250),BS(200),TAB(200,250)
 	DIMENSION LT(20),BLP(100,3),B(200),B1(200),LP(100,3),INJB(20)
-	
 	NMAX2=200
 	NMAX1=250
 	DO 50 I=1,NMAX1
-	  IBAS(I)=0.
-	  XOB(I)=0.
-	  XOBI(1,I)=0.
-	  XOBI(2,I)=0.
-	  DO 60 J=1,NMAX2
-	    A(J,I)=0.
- 60   CONTINUE
- 50 CONTINUE
- 
+	IBAS(I)=0.
+	XOB(I)=0.
+	XOBI(1,I)=0.
+	XOBI(2,I)=0.
+	DO 60 J=1,NMAX2
+	A(J,I)=0.
+ 60     CONTINUE
+ 50     CONTINUE
 	DO 55 I=1,NMAX2
-	  B(I)=0.
-	  B1(I)=0.
-	  BS(I)=0.
- 55 CONTINUE
- 
+	B(I)=0.
+	B1(I)=0.
+	BS(I)=0.
+ 55     CONTINUE
 	DO 100 I=1,NX
       II=I
       J=LT(I)
-100   IEQ(J)=I
-
+100     IEQ(J)=I
 	IEQ(NR)=II+1
 	NXD=2*NX
-    
-	DO 200 I=1,NX
-	  JJ=1
-	  DO 300 J=1,NX
-        A(I,JJ)=BC(I,J)
-        A(I,JJ+1)=-BC(I,J)
-        JJ=JJ+2
-300   CONTINUE
+      DO 200 I=1,NX
+	JJ=1
+	DO 300 J=1,NX
+      A(I,JJ)=BC(I,J)
+      A(I,JJ+1)=-BC(I,J)
+      JJ=JJ+2
+300     CONTINUE
       A(I,NXD+I)=-1.0
       B(I)=INJ(I)
-200 CONTINUE
-      
-	  NX1=NX+1
-	  
+200     CONTINUE
+      NX1=NX+1
       DO 400 I=1,NL
-        IF (LP(I,3) .NE. NR) GO TO 410
-          K=LP(I,2)
-          J1=IEQ(K)
-          I1=J1*2-1
-          A(NX1,I1)=A(NX1,I1)+BLP(I,1)
-          A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
-410     CONTINUE
-        IF(LP(I,2).NE.NR)GO TO 400
-          K=LP(I,3)
-          J1=IEQ(K)
-          I1=J1*2-1
-          A(NX1,I1)=A(NX1,I1)+BLP(I,1)
-          A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
-400   CONTINUE
-
+      IF (LP(I,3) .NE. NR) GO TO 410
+      K=LP(I,2)
+      J1=IEQ(K)
+      I1=J1*2-1
+      A(NX1,I1)=A(NX1,I1)+BLP(I,1)
+      A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
+410   CONTINUE
+      IF(LP(I,2).NE.NR)GO TO 400
+      K=LP(I,3)
+      J1=IEQ(K)
+      I1=J1*2-1
+      A(NX1,I1)=A(NX1,I1)+BLP(I,1)
+      A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
+400     CONTINUE
       NP=2*NX+1
       A(NX1,NX+NP)=1
       B(NX1)=INJB(NR)
       NP1=3*NX+1
-	  
       DO 600 I=1,NP1
-        A(NX1,I)=-A(NX1,I)
-600   CONTINUE
-
+      A(NX1,I)=-A(NX1,I)
+600     CONTINUE
       IF ( B(NX1) .GT.0) GO TO 500
-        XOB(NP1)=1.
-500   CONTINUE
-
+      XOB(NP1)=1.
+500     CONTINUE
       NXD=2*NX
       DO 700 I=1,NX1
-        IF ( B(I) .GT. 0) GO TO 700
-        XOB(NXD+I)=1.0
-700   CONTINUE
-
+      IF ( B(I) .GT. 0) GO TO 700
+      XOB(NXD+I)=1.0
+700     CONTINUE
       NP1=3*NX+1
-	  
       IF(NLS.EQ.0)GO TO 850
-	  
       DO 800 I=1,NX1
-        A(I+NX1,NP1+I)=1
-        A(I+NX1,NXD+I)=1
-        B(I+NX1)=ABS( B(I))
-800   CONTINUE
+      A(I+NX1,NP1+I)=1
+      A(I+NX1,NXD+I)=1
+      B(I+NX1)=ABS( B(I))
+800     CONTINUE
       GO TO 910
-	  
 850   CONTINUE
       DO 860 I=1,NX1
-        A(I+NX1,NP1+I)=1
-        A(I+NX1,NXD+I)=1
-        IF(B(I+NX1).GT.0)GO TO 870
-          J=LT(I)
-          B(I+NX1)=LOD(J)
-          GO TO 860
-870     CONTINUE
-        J=LT(I)
-        B(I+NX1)=B(I+NX1)+LOD(J)
+      A(I+NX1,NP1+I)=1
+      A(I+NX1,NXD+I)=1
+       IF(B(I+NX1).GT.0)GO TO 870
+      J=LT(I)
+       B(I+NX1)=LOD(J)
+      GO TO 860
+870   CONTINUE
+      J=LT(I)
+      B(I+NX1)=B(I+NX1)+LOD(J)
 860   CONTINUE
-
 910   CONTINUE
-
       NX2=NX1+NX1
       NP2=2*NX+2*NX1
       NP3=NP2+NL
-      
-	  DO 900 I=1,NL
-        I1=NX2+I
-        I2=I1+NL
-        J1=LP(I,2)
-        J2=LP(I,3)
-        J4=IEQ(J1)
-        J5=IEQ(J2)
-        J42=J4*2
-        J41=J42-1
-        J52=J5*2
-        J51=J52-1
-        IF(J4.GT.NX)GO TO 950
-          A(I1,J41)=BLP(I,1)
-          A(I1,J42)=-BLP(I,1)
-          A(I2,J41)=-BLP(I,1)
-          A(I2,J42)=BLP(I,1)
- 950    CONTINUE
-        IF(J5.GT.NX)GO TO 960
-          A(I1,J51)=-BLP(I,1)
-          A(I1,J52)=BLP(I,1)
-          A(I2,J51)=BLP(I,1)
-          A(I2,J52)=-BLP(I,1)
- 960    CONTINUE
-        A(I1,NP2+I)=1
-        A(I2,NP3+I)=1
-        B(I1)=BLP(I,2)
-        B(I2)=BLP(I,3)
+      DO 900 I=1,NL
+      I1=NX2+I
+      I2=I1+NL
+      J1=LP(I,2)
+      J2=LP(I,3)
+      J4=IEQ(J1)
+      J5=IEQ(J2)
+      J42=J4*2
+      J41=J42-1
+      J52=J5*2
+      J51=J52-1
+      IF(J4.GT.NX)GO TO 950
+      A(I1,J41)=BLP(I,1)
+      A(I1,J42)=-BLP(I,1)
+      A(I2,J41)=-BLP(I,1)
+      A(I2,J42)=BLP(I,1)
+ 950  CONTINUE
+      IF(J5.GT.NX)GO TO 960
+      A(I1,J51)=-BLP(I,1)
+      A(I1,J52)=BLP(I,1)
+      A(I2,J51)=BLP(I,1)
+      A(I2,J52)=-BLP(I,1)
+ 960  CONTINUE
+      A(I1,NP2+I)=1
+      A(I2,NP3+I)=1
+      B(I1)=BLP(I,2)
+      B(I2)=BLP(I,3)
  900  CONTINUE
- 
       NXL=NP3+NL
       NXD1=NXD+1
       M=2*NX1+2*NL
       N=NXL
-	  
       DO 1300 I=1,NX1
-        DO 1400 J=1,NXD
-          K=LT(I)
-          A(I+M,J)=A(I,J)
-          B(I+M)=BN(K,5)
-          A(I+M+NX1,J)=-A(I,J)
-          B(I+M+NX1)=BN(K,4)
- 1400   CONTINUE
-        A(I+M,I+N)=1.
-        A(I+M+NX1,I+N+NX1)=1.
+      DO 1400 J=1,NXD
+      K=LT(I)
+      A(I+M,J)=A(I,J)
+      B(I+M)=BN(K,5)
+      A(I+M+NX1,J)=-A(I,J)
+      B(I+M+NX1)=BN(K,4)
+ 1400 CONTINUE
+      A(I+M,I+N)=1.
+      A(I+M+NX1,I+N+NX1)=1.
  1300 CONTINUE
- 
       M=M+2*NX1
       N=N+2*NX1
-	  
       DO 1050 I=1,M
-        B1(I)=B(I)
+      B1(I)=B(I)
  1050 CONTINUE
- 
       DO 1000 I=1,NX1
-        IF(B(I).GT.0.)B(I)=0.
+      IF(B(I).GT.0.)B(I)=0.
  1000 CONTINUE
- 
       DO 1200 I=1,M
-        IF(B(I).GE.0)GO TO 1200
-        DO 1210 J=1,N
-          A(I,J)=-A(I,J)
- 1210   CONTINUE
-        B(I)=-B(I)
+      IF(B(I).GE.0)GO TO 1200
+      DO 1210 J=1,N
+      A(I,J)=-A(I,J)
+ 1210 CONTINUE
+      B(I)=-B(I)
  1200 CONTINUE
- 
       DO 1500 I=1,NX1
-        A(I,I+N)=1.
-        XOBI(1,I+N)=1.0
+      A(I,I+N)=1.
+      XOBI(1,I+N)=1.0
  1500 CONTINUE
- 
       DO 1600 I=1,N
-        XOBI(2,I)=XOB(I)
+      XOBI(2,I)=XOB(I)
  1600 CONTINUE
- 
       N=N+NX1
       NXD2=NXD1+NX1
       II=0
-	  
       DO 1100 I=NXD2,N
-        II=II+1
-        IBAS(II)=I
+      II=II+1
+      IBAS(II)=I
  1100 CONTINUE
- 
       NX2=NX1+1
       J=0
-	  
       DO 1700 I=NX2,M
-        J=J+1
-        DO 1800 K=1,N
-          TAB(J,K)=A(I,K)
- 1800   CONTINUE
-        BS(J)=B(I)
+      J=J+1
+      DO 1800 K=1,N
+      TAB(J,K)=A(I,K)
+ 1800 CONTINUE
+      BS(J)=B(I)
  1700 CONTINUE
- 
       DO 1900 I=1,NX1
-        J=J+1
-        DO 1950 K=1,N
-          TAB(J,K)=A(I,K)
- 1950   CONTINUE
-        BS(J)=B(I)
+      J=J+1
+      DO 1950 K=1,N
+      TAB(J,K)=A(I,K)
+ 1950 CONTINUE
+      BS(J)=B(I)
  1900 CONTINUE
- 
       DO 2000 I=1,M
-        DO 2000 J=1,N
-          A(I,J)=TAB(I,J)
+      DO 2000 J=1,N
+      A(I,J)=TAB(I,J)
  2000 CONTINUE
- 
       N1=N-NX1
       RETURN
       END
 
-	  
-	  
        SUBROUTINE  CONLS(A,BC,INJ,INJB,NX,XOB,IBAS,NR,LT,B,BLP,LP,NL,
      * M,N,BN,B1,LOD,NLS,XOBI,BS,TAB,N1)
        DOUBLE PRECISION XOB,A,B,XOBI,BS,TAB,BC,BLP
@@ -2056,7 +1927,6 @@ C
        DIMENSION A(200,250),BC(20,20),INJ(20),IBAS(250),XOB(250)
      * ,IEQ(20),BN(20,5),LOD(20),XOBI(2,250),BS(200),TAB(200,250)
        DIMENSION LT(20),BLP(100,3),B(200),B1(200),LP(100,3),INJB(20)
-	   
        NX1=NX+1
        NP1=3*NX+1
        NP=2*NX+1
@@ -2064,195 +1934,167 @@ C
        NMAX1=250
        NMAX2=200
        DO 50 I=1,NMAX1
-         IBAS(I)=0.
-         XOB(I)=0.
-         XOBI(1,I)=0.
-         XOBI(2,I)=0.
-         DO 60 J=1,NMAX2
-           A(J,I)=0.
- 60      CONTINUE
+       IBAS(I)=0.
+       XOB(I)=0.
+       XOBI(1,I)=0.
+       XOBI(2,I)=0.
+       DO 60 J=1,NMAX2
+       A(J,I)=0.
+ 60    CONTINUE
  50    CONTINUE
- 
-! Added by Yongli 09.2022 for rigorous initialization of BS
-		DO 55 I=1,NMAX2
-		  B(I)=0.
-		  B1(I)=0.
-		  BS(I)=0.
-	 55 CONTINUE
-! Added by Yongli 09.2022 for rigorous initialization
- 
        DO 100 I=1,NX
-         II=I
-         J=LT(I)
-100      IEQ(J)=I
-
+      II=I
+      J=LT(I)
+100    IEQ(J)=I
        IEQ(NR)=II+1
        NXD=2*NX
-       DO 200 I=1,NX
-         JJ=1
-         DO 300 J=1,NX
-           A(I,JJ)=BC(I,J)
-           A(I,JJ+1)=-BC(I,J)
-           JJ=JJ+2
-300      CONTINUE
-         A(I,NXD+I)=-1.0
-         J=LT(I)
-         B(I)=-LOD(J)
-         A(I,NP1+I)=-1.
-200    CONTINUE
-
+      DO 200 I=1,NX
+       JJ=1
+       DO 300 J=1,NX
+      A(I,JJ)=BC(I,J)
+      A(I,JJ+1)=-BC(I,J)
+      JJ=JJ+2
+300    CONTINUE
+      A(I,NXD+I)=-1.0
+      J=LT(I)
+      B(I)=-LOD(J)
+      A(I,NP1+I)=-1.
+200   CONTINUE
       NX1=NX+1
       DO 400 I=1,NL
-        IF (LP(I,3) .NE. NR) GO TO 410
-          K=LP(I,2)
-          J1=IEQ(K)
-          I1=J1*2-1
-          A(NX1,I1)=A(NX1,I1)+BLP(I,1)
-          A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
-410     CONTINUE
-        IF(LP(I,2).NE.NR)GO TO 400
-          K=LP(I,3)
-          J1=IEQ(K)
-          I1=J1*2-1
-          A(NX1,I1)=A(NX1,I1)+BLP(I,1)
-          A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
+      IF (LP(I,3) .NE. NR) GO TO 410
+      K=LP(I,2)
+      J1=IEQ(K)
+      I1=J1*2-1
+      A(NX1,I1)=A(NX1,I1)+BLP(I,1)
+      A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
+410   CONTINUE
+      IF(LP(I,2).NE.NR)GO TO 400
+      K=LP(I,3)
+      J1=IEQ(K)
+      I1=J1*2-1
+      A(NX1,I1)=A(NX1,I1)+BLP(I,1)
+      A(NX1,I1+1)=A(NX1,I1+1)-BLP(I,1)
 400   CONTINUE
-
       A(NX1,NX+NP)=1
       B(NX1)=-LOD(NR)
       A(NX1,NP1+NX1)=1.
       DO 600 I=1,NP2
-        A(NX1,I)=-A(NX1,I)
+      A(NX1,I)=-A(NX1,I)
 600   CONTINUE
-
       NXD=2*NX
       DO 700 I=1,NX1
-        XOB(NXD+I)=1.0
+      XOB(NXD+I)=1.0
 700   CONTINUE
       DO 860 I=1,NX1
-        A(I+NX1,NP2+I)=1
-        A(I+NX1,NXD+I)=1
-        J=LT(I)
-        B(I+NX1)=LOD(J)
+      A(I+NX1,NP2+I)=1
+      A(I+NX1,NXD+I)=1
+      J=LT(I)
+      B(I+NX1)=LOD(J)
 860   CONTINUE
-
       NX2=NX1+NX1
       NP2=2*NX+2*NX1
       DO 910 I=1,NX1
-        A(I+NX2,NP1+I)=1.
-        A(I+NX2,NP2+NX1+I)=1.
-        J=LT(I)
-        B(I+NX2)=LOD(J)+INJ(I)
+      A(I+NX2,NP1+I)=1.
+      A(I+NX2,NP2+NX1+I)=1.
+      J=LT(I)
+      B(I+NX2)=LOD(J)+INJ(I)
  910  CONTINUE
       NX3=3*NX1
       NP22=NP2+2*NX1
       NP3=NP22+NL
-	  
       DO 900 I=1,NL
-        I1=NX3+I
-        I2=I1+NL
-        J1=LP(I,2)
-        J2=LP(I,3)
-        J4=IEQ(J1)
-        J5=IEQ(J2)
-        J42=J4*2
-        J41=J42-1
-        J52=J5*2
-        J51=J52-1
-        IF(J4.GT.NX)GO TO 950
-          A(I1,J41)=BLP(I,1)
-          A(I1,J42)=-BLP(I,1)
-          A(I2,J41)=-BLP(I,1)
-          A(I2,J42)=BLP(I,1)
- 950    CONTINUE
-        IF(J5.GT.NX)GO TO 960
-          A(I1,J51)=-BLP(I,1)
-          A(I1,J52)=BLP(I,1)
-          A(I2,J51)=BLP(I,1)
-          A(I2,J52)=-BLP(I,1)
- 960    CONTINUE
-        A(I1,NP22+I)=1
-        A(I2,NP3+I)=1
-        B(I1)=BLP(I,2)
-        B(I2)=BLP(I,3)
+      I1=NX3+I
+      I2=I1+NL
+      J1=LP(I,2)
+      J2=LP(I,3)
+      J4=IEQ(J1)
+      J5=IEQ(J2)
+      J42=J4*2
+      J41=J42-1
+      J52=J5*2
+      J51=J52-1
+      IF(J4.GT.NX)GO TO 950
+      A(I1,J41)=BLP(I,1)
+      A(I1,J42)=-BLP(I,1)
+      A(I2,J41)=-BLP(I,1)
+      A(I2,J42)=BLP(I,1)
+ 950  CONTINUE
+      IF(J5.GT.NX)GO TO 960
+      A(I1,J51)=-BLP(I,1)
+      A(I1,J52)=BLP(I,1)
+      A(I2,J51)=BLP(I,1)
+      A(I2,J52)=-BLP(I,1)
+ 960  CONTINUE
+      A(I1,NP22+I)=1
+      A(I2,NP3+I)=1
+      B(I1)=BLP(I,2)
+      B(I2)=BLP(I,3)
  900  CONTINUE
- 
       NXL=NP3+NL
       NXD1=NXD+1
       M=3*NX1+2*NL
       N=NXL
-	  
       DO 1300 I=1,NX1
-        DO 1400 J=1,NXD
-          K=LT(I)
-          A(I+M,J)=A(I,J)
-          B(I+M)=BN(K,4)
-          A(I+M+NX1,J)=-A(I,J)
-          B(I+M+NX1)=BN(K,5)
- 1400   CONTINUE
-        A(I+M,I+N)=1.
-        A(I+M+NX1,I+N+NX1)=1.
+      DO 1400 J=1,NXD
+      K=LT(I)
+      A(I+M,J)=A(I,J)
+      B(I+M)=BN(K,4)
+      A(I+M+NX1,J)=-A(I,J)
+      B(I+M+NX1)=BN(K,5)
+ 1400 CONTINUE
+      A(I+M,I+N)=1.
+      A(I+M+NX1,I+N+NX1)=1.
  1300 CONTINUE
- 
       M=M+2*NX1
       N=N+2*NX1
-	  
       DO 1050 I=1,M
-        B1(I)=B(I)
+      B1(I)=B(I)
  1050 CONTINUE
- 
       DO 1000 I=1,NX1
-        IF(B(I).GT.0.)B(I)=0.
+      IF(B(I).GT.0.)B(I)=0.
  1000 CONTINUE
- 
       DO 1200 I=1,M
-        IF(B(I).GE.0)GO TO 1200
-        DO 1210 J=1,N
-          A(I,J)=-A(I,J)
- 1210   CONTINUE
-        B(I)=-B(I)
+      IF(B(I).GE.0)GO TO 1200
+      DO 1210 J=1,N
+      A(I,J)=-A(I,J)
+ 1210 CONTINUE
+      B(I)=-B(I)
  1200 CONTINUE
- 
       DO 1500 I=1,NX1
-        A(I,I+N)=1.
-        XOBI(1,I+N)=1.0
+      A(I,I+N)=1.
+      XOBI(1,I+N)=1.0
  1500 CONTINUE
       DO 1600 I=1,N
-        XOBI(2,I)=XOB(I)
+      XOBI(2,I)=XOB(I)
  1600 CONTINUE
- 
       N=N+NX1
       NXD2=NXD1+NX1+NX1
       II=0
-	  
       DO 1100 I=NXD2,N
-        II=II+1
-        IBAS(II)=I
+      II=II+1
+      IBAS(II)=I
  1100 CONTINUE
- 
       NX2=NX1+1
       J=0
       DO 1700 I=NX2,M
-        J=J+1
-        DO 1800 K=1,N
-          TAB(J,K)=A(I,K)
- 1800   CONTINUE
-        BS(J)=B(I)
+      J=J+1
+      DO 1800 K=1,N
+      TAB(J,K)=A(I,K)
+ 1800 CONTINUE
+      BS(J)=B(I)
  1700 CONTINUE
- 
       DO 1900 I=1,NX1
-        J=J+1
-        DO 1950 K=1,N
-          TAB(J,K)=A(I,K)
- 1950   CONTINUE
-        BS(J)=B(I)
+      J=J+1
+      DO 1950 K=1,N
+      TAB(J,K)=A(I,K)
+ 1950 CONTINUE
+      BS(J)=B(I)
  1900 CONTINUE
- 
       DO 2000 I=1,M
-        DO 2000 J=1,N
-          A(I,J)=TAB(I,J)
+      DO 2000 J=1,N
+      A(I,J)=TAB(I,J)
  2000 CONTINUE
- 
       N1=N-NX1
       RETURN
       END
@@ -2267,114 +2109,91 @@ C
      *(200),WORK(250),ZWORK(250),DET(2),RIBS(250)
       INTEGER IBAS(250),IBASF(250),IPVT(250)
       COMMON /PRIME1/ P,PI,CB,PY,TABT,BS1,WORK,ZWORK,DET,RIBS,IBASF,IPVT
-      
-	  DO 45 I=1,M
-        BS1(I)=BS(I)
+      DO 45 I=1,M
+      BS1(I)=BS(I)
  45   CONTINUE
- 
       IR=0
       INV=0
       DO 50 I=1,N
-        XOB(I)=XOBI(1,I)
-        IBASF(I)=0
+      XOB(I)=XOBI(1,I)
+      IBASF(I)=0
  50   CONTINUE
- 
       IPH=1
       DO 55 I=1,200
-        DO 55 J=1,250
-          TAB(I,J)=0.
+      DO 55 J=1,250
+      TAB(I,J)=0.
  55   CONTINUE
- 
       DO 100 I=1,M
-        K=IBAS(I)
-        IBASF(K)=1
-        DO 200 J=1,M
- 200      TAB(I,J)=0.
-        TAB(I,I)=1.
-        CB(I)=XOB(K)
+      K=IBAS(I)
+      IBASF(K)=1
+      DO 200 J=1,M
+ 200  TAB(I,J)=0.
+      TAB(I,I)=1.
+      CB(I)=XOB(K)
  100  CONTINUE
- 
   110  CONTINUE
-      N=N1
-	  
+       N=N1
       CALL RM(M,CB,TAB,PY)
-	  
  111  CONTINUE
- 
       CM=0.
 C      WRITE(14,*)M,N
 C      DO 301 I=1,N
 C 301  RIBS(I)=111.0
-
       DO 300 I=1,N
-        IF(IBASF(I).EQ.1)GO TO 300
-        CALL RC(M,PY,A,I,PROD)
-        CC=XOB(I)-PROD
-        CABA=DABS(CC)
-        IF(CABA.LT.0.1E-6)CC=0.
-		
+      IF(IBASF(I).EQ.1)GO TO 300
+      CALL RC(M,PY,A,I,PROD)
+      CC=XOB(I)-PROD
+      CABA=DABS(CC)
+      IF(CABA.LT.0.1E-6)CC=0.
 C      RIBS(I)=CC
 C      IC=C*1000.
 C      C=IC/1000.
 C      WRITE(14,*)C
-
-        DIFF=CC-CM
-        DIFF=DABS(DIFF)
-        IF(DIFF.LT.0.1E-06)GO TO 300
-        IF(CC.LT.CM)IND=I
-        IF(CC.LT.CM)CM=CC
+      DIFF=CC-CM
+      DIFF=DABS(DIFF)
+      IF(DIFF.LT.0.1E-06)GO TO 300
+      IF(CC.LT.CM)IND=I
+      IF(CC.LT.CM)CM=CC
  300  CONTINUE
- 
       IF(CM.LT.0.)GO TO 400
       IF(IR.EQ.1)GO TO 1000
-	  
       DO 305 I=1,M
-        IMAX=0
-        K=IBAS(I)
-        DO 305 J=1,M
- 305      TABT(J,I)=A(J,K)
- 
+      IMAX=0
+      K=IBAS(I)
+      DO 305 J=1,M
+ 305  TABT(J,I)=A(J,K)
 C      WRITE(14,*)LCLOCK,IPH
 C      WRITE(14,308)(IBAS(I),I=1,M)
-
  308  FORMAT(5X,'BASE',15(I3,1X)/15(I3,1X))
       CALL DGECO(TABT,200,M,IPVT,RCOND,ZWORK)
       CALL DGEDI(TABT,200,M,IPVT,DET,WORK,01)
       CALL RM(M,CB,TABT,PY)
-	  
       DO 307 I=1,N
-        IF(IBASF(I).EQ.0)GO TO 307
-        CALL RC(M,PY,A,I,PROD)
-        CC=XOB(I)-PROD
-        CC= DABS(CC)
-        IF(CC.LT..1E-8)GO TO 307
-        IMAX=500
+      IF(IBASF(I).EQ.0)GO TO 307
+      CALL RC(M,PY,A,I,PROD)
+      CC=XOB(I)-PROD
+      CC= DABS(CC)
+      IF(CC.LT..1E-8)GO TO 307
+      IMAX=500
  307  CONTINUE
- 
       IF(IMAX.EQ.0)GO TO 113
       WRITE(14,144)INV,LCLOCK
  144  FORMAT(5X,'INVERSIONS =',I2,'LCLOCK =',I6)
  113  CONTINUE
- 
       IF(IMAX.EQ.500)INV=INV+1
-	  
       DO 405 I=1,M
-        BS(I)=0.
-        DO 405 J=1,M
-          BS(I)=BS(I)+TABT(I,J)*BS1(J)
- 405      TAB(I,J)=TABT(I,J)
-      
-	  IR=1
-	  
+      BS(I)=0.
+      DO 405 J=1,M
+      BS(I)=BS(I)+TABT(I,J)*BS1(J)
+ 405  TAB(I,J)=TABT(I,J)
+      IR=1
       GO TO 111
-	  
  400  CONTINUE
       IR=0
       CALL MC(M,IND,TAB,A,P)
       ICOUN=0
 C      WRITE(14,*)M
 C      RAT1=-1.
-
       DO 500 I=1,M
       IF(P(I).LE.0.1E-06)GO TO 500
       BNUM=BS(I)
@@ -2397,24 +2216,20 @@ C      WRITE(14,*)RAT
       IF(XOB(K).EQ.1.)IPIV=I
  501  CONTINUE
  500  CONTINUE
- 
 C      IF(RAT1.GE.-1.E-08)GO TO 509
 C      WRITE(*,5011)RAT1
 C 5011 FORMAT(5X,'SOLUTION IS UNBOUNDED',E13.6,/)
 C 509  CONTINUE
-
       DO 700 I=1,M
-        IF(P(I).EQ.0)GO TO 700
-        IF(I.EQ.IPIV)GO TO 700
-        DO 800 J=1,M
- 800      TAB(I,J)=TAB(I,J)-TAB(IPIV,J)*P(I)/P(IPIV)
-        BS(I)=BS(I)-BS(IPIV)*P(I)/P(IPIV)
+      IF(P(I).EQ.0)GO TO 700
+      IF(I.EQ.IPIV)GO TO 700
+      DO 800 J=1,M
+ 800  TAB(I,J)=TAB(I,J)-TAB(IPIV,J)*P(I)/P(IPIV)
+      BS(I)=BS(I)-BS(IPIV)*P(I)/P(IPIV)
  700  CONTINUE
- 
       DO 600 I=1,M
-        TAB(IPIV,I)=TAB(IPIV,I)/P(IPIV)
+      TAB(IPIV,I)=TAB(IPIV,I)/P(IPIV)
  600  CONTINUE
- 
       BS(IPIV)=BS(IPIV)/P(IPIV)
       CB(IPIV)=XOB(IND)
       K1=IBAS(IPIV)
@@ -2422,121 +2237,93 @@ C 509  CONTINUE
       IBASF(IND)=1
       IBAS(IPIV)=IND
       SUMO=0.
-	  
       DO 1050 I=1,M
-        K=IBAS(I)
-        SUMO=SUMO+BS(I)*XOB(K)
+      K=IBAS(I)
+      SUMO=SUMO+BS(I)*XOB(K)
 1050  CONTINUE
-
       GO TO 110
-	  
 1000  CONTINUE
       IF(IPH.EQ.2)GO TO 2000
 C      N=N-NXT
-      
-	  DO 1100 I=1,N
-        XOB(I)=XOBI(2,I)
+      DO 1100 I=1,N
+      XOB(I)=XOBI(2,I)
  1100 CONTINUE
- 
 C      WRITE(*,1170)(XOB(I),I=1,N)
  1170 FORMAT(5X,15F5.0)
- 
       DO 1200 I=1,M
-        K=IBAS(I)
-        CB(I)=XOB(K)
+      K=IBAS(I)
+      CB(I)=XOB(K)
  1200 CONTINUE
- 
       IPH=2
       GO TO 110
-	  
  2000 CONTINUE
- 
 C      WRITE(14,*)(RIBS(I),I=1,N)
 C      WRITE(14,2001)
 C 2001 FORMAT(5X,'VALUES OF MARGINAL COSTS FOR NON BASIC VARIABLES',/)
       RETURN
       END
-	  
-	  
       SUBROUTINE RM(M,CB,TAB,PY)
       DOUBLE PRECISION TAB,CB,PY
       DIMENSION CB(200),TAB(200,250),PY(200)
       DO 100 I=1,M
-        PY(I)=0.
-        DO 200 J=1,M
- 200      PY(I)=PY(I)+CB(J)*TAB(J,I)
+      PY(I)=0.
+      DO 200 J=1,M
+ 200  PY(I)=PY(I)+CB(J)*TAB(J,I)
  100  CONTINUE
       RETURN
       END
-	  
-	  
       SUBROUTINE RC(M,PY,A,IND,PROD)
       DOUBLE PRECISION PY,A,PROD
       DIMENSION A(200,250),PY(200)
       PROD=0.
       DO 100 I=1,M
-        PROD=PROD+PY(I)*A(I,IND)
+      PROD=PROD+PY(I)*A(I,IND)
  100  CONTINUE
       RETURN
       END
-	  
-	  
       SUBROUTINE MC(M,IN,TAB,A,CO)
       DOUBLE PRECISION TAB,CO,A
       DIMENSION TAB(200,250),A(200,250),CO(200)
       DO 100 I=1,M
-        CO(I)=0.
-        DO 200 J=1,M
- 200      CO(I)=CO(I)+TAB(I,J)*A(J,IN)
+      CO(I)=0.
+      DO 200 J=1,M
+ 200  CO(I)=CO(I)+TAB(I,J)*A(J,IN)
  100  CONTINUE
       RETURN
       END
-	  
-	  
-C     ------ USELESS -- YONGLI	  
       SUBROUTINE MC1(M,I,TAB,B,BS)
       DOUBLE PRECISION TAB,BS,B
       DIMENSION TAB(200,250),B(200),BS(200)
       DO 100 I=1,M
-        BS(I)=0.
-        DO 200 J=1,M
- 200      BS(I)=BS(I)+TAB(I,J)*B(J)
+      BS(I)=0.
+      DO 200 J=1,M
+ 200  BS(I)=BS(I)+TAB(I,J)*B(J)
  100  CONTINUE
       RETURN
       END
-	  
-	  
       SUBROUTINE NET(B,B1,RES,IBAS,BS,M,N)
       DOUBLE PRECISION BS,B
       DIMENSION B(200),B1(200),RES(250,3),IBAS(250),BS(200)
-      
-	  NX1=N-M
-      
-	  DO 100 I=1,N
-        DO 100 J=1,3
- 100      RES(I,J)=0.
-      
-	  DO 200 I=1,M
-        K=IBAS(I)
-		
-        IF(K.LE.NX1) GO TO 210
-		  K1=K-NX1
-		  RES(K,1)=-BS(I)
-          GO TO 200
-		
- 210    CONTINUE
-        RES(K,1)=BS(I)
+      NX1=N-M
+      DO 100 I=1,N
+      DO 100 J=1,3
+ 100  RES(I,J)=0.
+      DO 200 I=1,M
+      K=IBAS(I)
+      IF(K.LE.NX1)GO TO 210
+      K1=K-NX1
+      RES(K,1)=-BS(I)
+      GO TO 200
+ 210  CONTINUE
+      RES(K,1)=BS(I)
  200  CONTINUE
-      
-	  DO 300 I=1,M
-        I1=I+NX1
-        IF(B1(I).LT.0.)RES(I1,2)=1.
-        RES(I1,1)=RES(I1,1)+B(I)
+      DO 300 I=1,M
+      I1=I+NX1
+      IF(B1(I).LT.0.)RES(I1,2)=1.
+      RES(I1,1)=RES(I1,1)+B(I)
  300  CONTINUE
- 
       RETURN
       END
-
 
 
       SUBROUTINE TM1(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR)
@@ -2545,46 +2332,35 @@ C     ------ USELESS -- YONGLI
       DIMENSION BN(20,5),LP(100,3),BLP(100,3),BLP0(100)
      *,BB(20,20),ZB(20,20),LT(20)
      *,ZB0(20,20)
-	 
       MULT=1
       NX=NN-1
-	  
       CALL ADMITB(LP,BLP,BB)
       CALL ADMITR(BB,NR,NN,BN,LT)
-	  
       DO 200 I=1,NL
-		BLP0(I)=BLP(I,1)
+      BLP0(I)=BLP(I,1)
  200  CONTINUE
- 
       DO 300 I=1,NX
-		DO 300 J=1,NX
- 300  		ZB0(I,J)=BB(I,J)
- 
+      DO 300 J=1,NX
+ 300  ZB0(I,J)=BB(I,J)
 C       DO 210 I=1,NX
-C         WRITE(16,215)(BB(I,J),J=1,NX)
+C       WRITE(16,215)(BB(I,J),J=1,NX)
 C 210  CONTINUE
 C 215  FORMAT(2X,9(F7.2,1X)/2X,9(F7.2,1X))
-
       CALL MINV(ZB0,NX)
-	  
       DO 400 I=1,NX
-		DO 400 J=1,NX
- 400      ZB(I,J)=ZB0(I,J)
- 
+      DO 400 J=1,NX
+ 400  ZB(I,J)=ZB0(I,J)
       RETURN
       END
-	  
 
 
       SUBROUTINE TM2(BN,LP,BLP,BLP0,NN,NL,BB,ZB,LT,NR,FLOW,NLS,BNS,
      *LCLOCK,JHOUR,IOI,JFLAG,INDIC)
-	 
       COMMON /GENS/ AVAIL(600),CAPAVL(20,600),CAPOWN(20,600),
      @DERATE(600),ICLASS(600),IDATES(600,4),IGSEED(601),JPLOUT(52,120),
      @JNTOWN(600),NOGEN(20),NUNITS,PCTAVL(600),PLNDST(600),
      @RANDG(600),RATES(600,4),RATING(600),SYSCON(20),SYSOWN(20),
      +PROBC(9,2),PROBG(600,2),CAPCON(600)
-	 
       COMMON/PRIM1/A,XOB,XOBI,TAB,IBAS
       DOUBLE PRECISION A,XOB,BS,B,XOBI,TAB,BB,ZB,Z,BT,ZT,BLP,BLP0
      *,BIJ,ZIJ
@@ -2598,160 +2374,120 @@ C 215  FORMAT(2X,9(F7.2,1X)/2X,9(F7.2,1X))
      *,SFLOW(20),BNS(20,6),NNTAB(600)
 
       DO 49 I=1,20
-		SFLOW(I)=0.
+      SFLOW(I)=0.
  49   CONTINUE
- 
       MULT=0
       NX=NN-1
-	  
       DO 50 I=1,NX
-		II=I
-		J=LT(I)
- 50   	IEQ(J)=I
- 
-	  IEQ(NR)=II+1
+      II=I
+      J=LT(I)
+ 50   IEQ(J)=I
+      IEQ(NR)=II+1
       DO 100 I=1,NN
-		INJB(I)=BN(I,3)-BN(I,2)*MULT
-		LOD(I)=BN(I,2)
+      INJB(I)=BN(I,3)-BN(I,2)*MULT
+      LOD(I)=BN(I,2)
  100  CONTINUE
- 
       DO 200 I=1,NN
-		J=LT(I)
-		INJ(I)=INJB(J)
+      J=LT(I)
+      INJ(I)=INJB(J)
  200  CONTINUE
- 
       DO 300 I=1,NX
-		DO 300 J=1,NX
-			BT(I,J)=BB(I,J)
- 300  		ZT(I,J)=ZB(I,J)
- 
+      DO 300 J=1,NX
+      BT(I,J)=BB(I,J)
+ 300  ZT(I,J)=ZB(I,J)
       DO 400 I=1,NL
-        D=BLP(I,1)-BLP0(I)
-        IDD=D*1000.
-        IF(IDD.EQ.0)GO TO 400
-        NI=LP(I,2)
-        NJ=LP(I,3)
-		
-        IF((NI.EQ.NR).OR.(NJ.EQ.NR))GO TO 410
-		
-        NII=IEQ(NI)
-        NJJ=IEQ(NJ)
-        BIJ=BLP(I,1)
-		
-        IF(BIJ.EQ.0.)GO TO 431
-          ZIJ=-1/BIJ
-          CALL XIMPA(ZB,Z,ZIJ,NII,NJJ,NN)
-          CALL ADMITM(BB,NII,NJJ,BIJ,NX)
-          DO 430 I1=1,NX
-            DO 430 J1=1,NX
-              ZB(I1,J1)=Z(I1,J1)
- 430      CONTINUE
- 
- 431    CONTINUE
- 
+      D=BLP(I,1)-BLP0(I)
+      IDD=D*1000.
+      IF(IDD.EQ.0)GO TO 400
+      NI=LP(I,2)
+      NJ=LP(I,3)
+      IF((NI.EQ.NR).OR.(NJ.EQ.NR))GO TO 410
+      NII=IEQ(NI)
+      NJJ=IEQ(NJ)
+      BIJ=BLP(I,1)
+      IF(BIJ.EQ.0.)GO TO 431
+      ZIJ=-1/BIJ
+      CALL XIMPA(ZB,Z,ZIJ,NII,NJJ,NN)
+      CALL ADMITM(BB,NII,NJJ,BIJ,NX)
+      DO 430 I1=1,NX
+      DO 430 J1=1,NX
+      ZB(I1,J1)=Z(I1,J1)
+ 430  CONTINUE
+ 431  CONTINUE
 C      DO 303 IXX=1,NX
 C      WRITE(*,302)(BB(IXX,IJJ),IJJ=1,NX)
 C 303  CONTINUE
-
-       BIJ=-BLP0(I)
-       ZIJ=-1/BIJ
-	   
+      BIJ=-BLP0(I)
+      ZIJ=-1/BIJ
 C      DO 301 IXX=1,NX
 C      WRITE(*,302)(BB(IXX,IJJ),IJJ=1,NX)
 C 301  CONTINUE
 C 302  FORMAT(5X,10F8.2/10F8.2)
-
-       CALL XIMPA(ZB,Z,ZIJ,NII,NJJ,NN)
-       CALL ADMITM(BB,NII,NJJ,BIJ,NX)
-       
-	   DO 420 I1=1,NX
-         DO 420 J1=1,NX
-           ZB(I1,J1)=Z(I1,J1)
- 420   CONTINUE
- 
-       GO TO 400
-	  
- 410   IF(NI.EQ.NR)NI=NJ
-       NII=IEQ(NI)
-       BIJ=BLP(I,1)
-	   
-       IF(BIJ.EQ.0.)GO TO 400
-       ZIJ=-1/BIJ
-       
-	   CALL XIMPAR(ZB,Z,ZIJ,NII,NN)
-       CALL ADMREF(BB,NII,BIJ,NX)
-       
-	   DO 460 I1=1,NX
-         DO 460 J1=1,NX
-           ZB(I1,J1)=Z(I1,J1)
- 460   CONTINUE
- 
-       BIJ=-BLP0(I)
-       ZIJ=-1/BIJ
-      
-	   CALL XIMPAR(ZB,Z,ZIJ,NII,NN)
-       CALL ADMREF(BB,NII,BIJ,NX)
-      
-	   DO 450 I1=1,NX
-         DO 450 J1=1,NX
-           ZB(I1,J1)=Z(I1,J1)
- 450   CONTINUE
+      CALL XIMPA(ZB,Z,ZIJ,NII,NJJ,NN)
+      CALL ADMITM(BB,NII,NJJ,BIJ,NX)
+      DO 420 I1=1,NX
+      DO 420 J1=1,NX
+      ZB(I1,J1)=Z(I1,J1)
+ 420  CONTINUE
+      GO TO 400
+ 410  IF(NI.EQ.NR)NI=NJ
+      NII=IEQ(NI)
+      BIJ=BLP(I,1)
+      IF(BIJ.EQ.0.)GO TO 400
+      ZIJ=-1/BIJ
+      CALL XIMPAR(ZB,Z,ZIJ,NII,NN)
+      CALL ADMREF(BB,NII,BIJ,NX)
+      DO 460 I1=1,NX
+      DO 460 J1=1,NX
+      ZB(I1,J1)=Z(I1,J1)
+ 460  CONTINUE
+      BIJ=-BLP0(I)
+      ZIJ=-1/BIJ
+      CALL XIMPAR(ZB,Z,ZIJ,NII,NN)
+      CALL ADMREF(BB,NII,BIJ,NX)
+      DO 450 I1=1,NX
+      DO 450 J1=1,NX
+      ZB(I1,J1)=Z(I1,J1)
+ 450  CONTINUE
 
  400  CONTINUE
- 
-
       CALL ASSIGN(INJ,INJ1,LOD,LODC,LT,NN,NLS)
       CALL THETA(ZB,THET,INJ1,NX)
       CALL THETAC(THET,THETC,LT,NN)
       CALL FLO(LP,BLP,FLOW,THETC,SFLOW)
-	  
       INDIC=0
-	  
       DO 500 I=1,NL
-        IF(FLOW(I).LT.0)GO TO 510
-          IF(FLOW(I).GT.BLP(I,2))INDIC=1
-        
-		  GO TO 500
-		
- 510    FF=FLOW(I)
- 
-        FF=ABS(FF)
-        DIRF=BLP(I,3)
-        IF(FF.GT.DIRF)INDIC=1
+      IF(FLOW(I).LT.0)GO TO 510
+      IF(FLOW(I).GT.BLP(I,2))INDIC=1
+      GO TO 500
+ 510  FF=FLOW(I)
+      FF=ABS(FF)
+      DIRF=BLP(I,3)
+      IF(FF.GT.DIRF)INDIC=1
  500  CONTINUE
- 
       DO 511 I=1,NN
-        IF(SFLOW(I).LT.0)GO TO 512
-        IF(SFLOW(I).GT.BN(I,4))INDIC=1
-        
-		GO TO 511
-		
- 512    FF=SFLOW(I)
-        FF=ABS(FF)
-        DIRF=BN(I,5)
-        IF(FF.GT.DIRF)INDIC=1
+      IF(SFLOW(I).LT.0)GO TO 512
+      IF(SFLOW(I).GT.BN(I,4))INDIC=1
+      GO TO 511
+ 512  FF=SFLOW(I)
+      FF=ABS(FF)
+      DIRF=BN(I,5)
+      IF(FF.GT.DIRF)INDIC=1
  511  CONTINUE
- 
- 
 C      WRITE(*,*)INDIC
       IF(INDIC.EQ.1)GO TO 600
-	  
       DO 550 I=1,NN
-        J=LT(I)
-C       WRITE(*,*)I,J
-        BN(J,2)=INJ1(I)
-        BN(I,3)=LODC(I)
+      J=LT(I)
+C      WRITE(*,*)I,J
+      BN(J,2)=INJ1(I)
+      BN(I,3)=LODC(I)
  550  CONTINUE
- 
       INL=0
       GO TO 1000
-	  
  600  CONTINUE
- 
       IF(NLS.EQ.0)GO TO 1200
       CALL CONNLS(A,BB,INJ,INJB,NX,XOB,IBAS,NR,LT,B,BLP,LP,NL,M,N
      *,BN,B1,LOD,NLS,XOBI,BS,TAB,N1)
-	 
 C       DO 1400 I=1,M
 C       WRITE(*,1410)(A(I,J),J=1,N),B(I)
 C 1400  CONTINUE
@@ -2764,163 +2500,128 @@ C       DO 1411 J=1,NX+NX
 C       A(I,J)=A(I,J)/10.
 C       TAB(I,J)=TAB(I,J)/10.
 C 1411  CONTINUE
-
-      NXT=NX+1
-	  
+       NXT=NX+1
       CALL LINP(M,N,A,B,XOB,XOBI,IBAS,BS,NXT,TAB,LCLOCK,JFLAG,N1)
       CALL NET(B,B1,RES,IBAS,BS,M,N)
-	  
       NXD1=NX*2+1
       NXD2=NXD1+NX
-	  
       DO 700 I=NXD1,NXD2
-        II=I-NXD1+1
-        J=LT(II)
-        BN(J,2)=-RES(I,1)
-        BN(J,3)=-BN(J,3)+BN(J,2)
-        IF(BN(J,3).LT.0)BN(J,3)=0.
+      II=I-NXD1+1
+      J=LT(II)
+      BN(J,2)=-RES(I,1)
+      BN(J,3)=-BN(J,3)+BN(J,2)
+      IF(BN(J,3).LT.0)BN(J,3)=0.
  700  CONTINUE
- 
       NXD1=4*NX+3
       NXD2=4*NX+2+NL
       J=0
-	  
       DO 800 I=NXD1,NXD2
-        J=J+1
-        FLOW(J)=RES(I,1)
+      J=J+1
+      FLOW(J)=RES(I,1)
  800  CONTINUE
- 
       IF(IOI.EQ.0)GO TO 807
       WRITE(13,806)LCLOCK,JHOUR,JFLAG
  806  FORMAT(5X,I8,2X,I4,2X,I1)
- 
 C     PRINT TABLE OF UNITS ON OUTAGE OR DERATED TO TRAOUT FILE
 C     JXX IS UNIT NUMBER ON OUTAGE, DERATED, OR ON PLANNED MAINTENANCE.
 C     NNTAB(I) IS INDEX OF UNIT ON OUTAGE OR ON MAINTENANCE.
 C     IF UNIT IS DERATED, THEN NNTAB(I) HAS - SIGN.
-
       JXX=0
       DO 1710 I=1,NUNITS
-        IF(PLNDST(I).EQ.1.0)GO TO 1708
-        JXX=JXX+1
-        NNTAB(JXX)=I
-        GO TO 1710
- 1708   IF(PCTAVL(I).EQ.1.0)GO TO 1710
-        JXX=JXX+1
-        NNTAB(JXX)=I
-        IF(PCTAVL(I).NE.0.0)NNTAB(JXX)=-I
+      IF(PLNDST(I).EQ.1.0)GO TO 1708
+      JXX=JXX+1
+      NNTAB(JXX)=I
+      GO TO 1710
+ 1708 IF(PCTAVL(I).EQ.1.0)GO TO 1710
+      JXX=JXX+1
+      NNTAB(JXX)=I
+      IF(PCTAVL(I).NE.0.0)NNTAB(JXX)=-I
  1710 CONTINUE
- 
       WRITE(13,1711)JXX,(NNTAB(I),I=1,JXX)
  1711 FORMAT(20I4)
       IF(JFLAG.EQ.1)GO TO 833
-	  
       DO 831 I=1,NN
-        WRITE(13,402)BN(I,1),BNS(I,1),BN(I,2),BNS(I,5),BNS(I,6)
+      WRITE(13,402)BN(I,1),BNS(I,1),BN(I,2),BNS(I,5),BNS(I,6)
  831  CONTINUE
- 
  833  CONTINUE
- 
  402  FORMAT(5X,F3.0,4(F10.2,2X))
       IF(JFLAG.EQ.0)GO TO 837
-	  
       DO 801 I=1,NN
-        WRITE(13,802)(BN(I,J),J=1,3),(BNS(I,J),J=1,2),BN(I,4)
+      WRITE(13,802)(BN(I,J),J=1,3),(BNS(I,J),J=1,2),BN(I,4)
  801  CONTINUE
- 
  837  CONTINUE
  802  FORMAT(5X,F3.0,5(F8.0,5X))
- 
       DO 803 I=1,NL
-        WRITE(13,804)(LP(I,J),J=1,3),(BLP(I,J),J=1,3),FLOW(I)
+      WRITE(13,804)(LP(I,J),J=1,3),(BLP(I,J),J=1,3),FLOW(I)
  803  CONTINUE
- 
  807  CONTINUE
  804  FORMAT(5X,3(I3,2X),4(F8.0,2X))
       GO TO 1000
-	  
 1200  CONTINUE
-
       CALL CONLS(A,BB,INJ,INJB,NX,XOB,IBAS,NR,LT,B,BLP,LP,NL,M,N
      *,BN,B1,LOD,NLS,XOBI,BS,TAB,N1)
-	 
 C       DO 1400 I=1,M
 C       WRITE(*,1410)(A(I,J),J=1,N),B(I)
 C 1400  CONTINUE
 C 1410  FORMAT(12F6.2/12F6.2)
-
-      NXT=NX+1
+       NXT=NX+1
       CALL LINP(M,N,A,B,XOB,XOBI,IBAS,BS,NXT,TAB,LCLOCK,JFLAG,N1)
       CALL NET(B,B1,RES,IBAS,BS,M,N)
-	  
 C      DO 710 I=1,N
 C      WRITE(*,720)IBAS(I),BS(I),B(I),B1(I),RES(I,1)
 C 710  CONTINUE
 C 720  FORMAT(10X,I3,5X,4F10.2)
-
       NX1=NX+1
       NXD1=NX*2+2*NX1+1
       NXD2=NXD1+NX
-	  
       DO 1700 I=NXD1,NXD2
-        II=I-NXD1+1
-        J=LT(II)
-        BN(J,3)=RES(I,1)
-        III=I+NX1
-        BN(J,2)=RES(III,1)-LOD(J)+BN(J,3)
+      II=I-NXD1+1
+      J=LT(II)
+      BN(J,3)=RES(I,1)
+      III=I+NX1
+      BN(J,2)=RES(III,1)-LOD(J)+BN(J,3)
 1700  CONTINUE
-
       NXD1=6*NX1-1
       NXD2=NXD1-1+NL
       J=0
       DO 1800 I=NXD1,NXD2
-        J=J+1
-        FLOW(J)=RES(I,1)
+      J=J+1
+      FLOW(J)=RES(I,1)
 1800  CONTINUE
-
       IF(IOI.EQ.0)GO TO 707
       WRITE(13,806)LCLOCK,JHOUR,JFLAG
-	  
 C     PRINT TABLE OF UNITS ON OUTAGE OR DERATED TO TRAOUT FILE
 C     JXX IS UNIT NUMBER ON OUTAGE, DERATED, OR ON PLANNED MAINTENANCE.
 C     NNTAB(I) IS INDEX OF UNIT ON OUTAGE OR ON MAINTENANCE.
 C     IF UNIT IS DERATED, THEN NNTAB(I) HAS - SIGN.
-
       JXX=0
       DO 1810 I=1,NUNITS
-        IF(PLNDST(I).EQ.1.0)GO TO 1808
-        JXX=JXX+1
-        NNTAB(JXX)=I
-        GO TO 1810
- 1808   IF(PCTAVL(I).EQ.1.0)GO TO 1810
-        JXX=JXX+1
-        NNTAB(JXX)=I
-        IF(PCTAVL(I).NE.0.0)NNTAB(JXX)=-I
+      IF(PLNDST(I).EQ.1.0)GO TO 1808
+      JXX=JXX+1
+      NNTAB(JXX)=I
+      GO TO 1810
+ 1808 IF(PCTAVL(I).EQ.1.0)GO TO 1810
+      JXX=JXX+1
+      NNTAB(JXX)=I
+      IF(PCTAVL(I).NE.0.0)NNTAB(JXX)=-I
  1810 CONTINUE
- 
       WRITE(13,1711)JXX,(NNTAB(I),I=1,JXX)
 C
       DO 701 I=1,NN
-        WRITE(13,802)(BN(I,J),J=1,3),(BNS(I,J),J=1,2),BN(I,4)
+      WRITE(13,802)(BN(I,J),J=1,3),(BNS(I,J),J=1,2),BN(I,4)
  701  CONTINUE
- 
       DO 703 I=1,NL
-        WRITE(13,804)(LP(I,J),J=1,3),(BLP(I,J),J=1,3),FLOW(I)
+      WRITE(13,804)(LP(I,J),J=1,3),(BLP(I,J),J=1,3),FLOW(I)
  703  CONTINUE
- 
  707  CONTINUE
- 
 1000  CONTINUE
       DO 1900 I=1,NX
-        DO 1900 J=1,NX
-          BB(I,J)=BT(I,J)
-          ZB(I,J)=ZT(I,J)
+      DO 1900 J=1,NX
+      BB(I,J)=BT(I,J)
+      ZB(I,J)=ZT(I,J)
 1900  CONTINUE
-
       RETURN
       END
-
-
 
       SUBROUTINE ADMITM(BB,NII,NJJ,BIJ,NX)
       DOUBLE PRECISION BB,BIJ
@@ -2939,9 +2640,6 @@ C
       BB(NII,NII)=BB(NII,NII)+BIJ
       RETURN
       END
-	  
-	  
-	  
 C@AUG30 ADD@-----------------------------------------------------------
       SUBROUTINE YEAR (IERR,RFLAG)
 C....................................................................
@@ -2950,9 +2648,7 @@ C....................................................................
       DIMENSION XPROB(5)
       CHARACTER*2 XG/'GC'/,XT/'TC'/,XS/'GT'/,XA/'AV'/
       DATA XPROB /.0668,.2417,.383,.2417,.0668/
-	  
       IF (NFCST.EQ.1) XPROB(1) = 1.0
-	  
 C.....SCHEDULE EVENT FOR NEXT END OF YEAR..............................
 C     ATRIB(1) = CLOCK + FLOAT(NHRSYR)
       ATRIB(1) = CLOCK + 8760.D0
@@ -3017,121 +2713,111 @@ C COMPUTE TOTAL MAGNITUDES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
 	 WGNGHA(IAR) = WGNGHA(IAR) + FLOAT(MGNGHA(IAR,N))*XPROB(N)
 	 WGNTHA(IAR) = WGNTHA(IAR) + FLOAT(MGNTHA(IAR,N))*XPROB(N)
    10 CONTINUE
-   
       DO 12 IAR = 1, NOAREA
-        SWNGHA(IAR) = SWNGHA(IAR) + WGNGHA(IAR)
-        SWNTHA(IAR) = SWNTHA(IAR) + WGNTHA(IAR)
-        SWNSHA(IAR) = SWNSHA(IAR) + WGNSHA(IAR)
-        SWLGHA(IAR) = SWLGHA(IAR) + WOLGHA(IAR)
-        SWLTHA(IAR) = SWLTHA(IAR) + WOLTHA(IAR)
-   12   SWLSHA(IAR) = SWLSHA(IAR) + WOLSHA(IAR)
-   
+      SWNGHA(IAR) = SWNGHA(IAR) + WGNGHA(IAR)
+      SWNTHA(IAR) = SWNTHA(IAR) + WGNTHA(IAR)
+      SWNSHA(IAR) = SWNSHA(IAR) + WGNSHA(IAR)
+      SWLGHA(IAR) = SWLGHA(IAR) + WOLGHA(IAR)
+      SWLTHA(IAR) = SWLTHA(IAR) + WOLTHA(IAR)
+   12 SWLSHA(IAR) = SWLSHA(IAR) + WOLSHA(IAR)
       DO 20 N = 1, NFCST
-        DO 20 IAR = 1, NOAREA
+      DO 20 IAR = 1, NOAREA
 C COMPUTE LOLES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	       LOLSPA(IAR,N) = LOLTPA(IAR,N) + LOLGPA(IAR,N)
-	       SOLSPA(IAR,N) = SOLSPA(IAR,N) + FLOAT(LOLSPA(IAR,N))
-	       SOLTPA(IAR,N) = SOLTPA(IAR,N) + FLOAT(LOLTPA(IAR,N))
-	       SOLGPA(IAR,N) = SOLGPA(IAR,N) + FLOAT(LOLGPA(IAR,N))
-	       WOLGPA(IAR) = WOLGPA(IAR) + FLOAT(LOLGPA(IAR,N))*XPROB(N)
-	       WOLTPA(IAR) = WOLTPA(IAR) + FLOAT(LOLTPA(IAR,N))*XPROB(N)
-	       WOLSPA(IAR) = WOLSPA(IAR) + FLOAT(LOLSPA(IAR,N))*XPROB(N)
+	 LOLSPA(IAR,N) = LOLTPA(IAR,N) + LOLGPA(IAR,N)
+	 SOLSPA(IAR,N) = SOLSPA(IAR,N) + FLOAT(LOLSPA(IAR,N))
+	 SOLTPA(IAR,N) = SOLTPA(IAR,N) + FLOAT(LOLTPA(IAR,N))
+	 SOLGPA(IAR,N) = SOLGPA(IAR,N) + FLOAT(LOLGPA(IAR,N))
+	 WOLGPA(IAR) = WOLGPA(IAR) + FLOAT(LOLGPA(IAR,N))*XPROB(N)
+	 WOLTPA(IAR) = WOLTPA(IAR) + FLOAT(LOLTPA(IAR,N))*XPROB(N)
+	 WOLSPA(IAR) = WOLSPA(IAR) + FLOAT(LOLSPA(IAR,N))*XPROB(N)
 C COMPUTE TOTAL MAGNITUDES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	       MGNSPA(IAR,N) = MGNTPA(IAR,N) + MGNGPA(IAR,N)
-	       SGNSPA(IAR,N) = SGNSPA(IAR,N) + FLOAT(MGNSPA(IAR,N))
-	       SGNTPA(IAR,N) = SGNTPA(IAR,N) + FLOAT(MGNTPA(IAR,N))
-	       SGNGPA(IAR,N) = SGNGPA(IAR,N) + FLOAT(MGNGPA(IAR,N))
-	       WGNGPA(IAR) = WGNGPA(IAR) + FLOAT(MGNGPA(IAR,N))*XPROB(N)
-	       WGNTPA(IAR) = WGNTPA(IAR) + FLOAT(MGNTPA(IAR,N))*XPROB(N)
-	       WGNSPA(IAR) = WGNSPA(IAR) + FLOAT(MGNSPA(IAR,N))*XPROB(N)
+	 MGNSPA(IAR,N) = MGNTPA(IAR,N) + MGNGPA(IAR,N)
+	 SGNSPA(IAR,N) = SGNSPA(IAR,N) + FLOAT(MGNSPA(IAR,N))
+	 SGNTPA(IAR,N) = SGNTPA(IAR,N) + FLOAT(MGNTPA(IAR,N))
+	 SGNGPA(IAR,N) = SGNGPA(IAR,N) + FLOAT(MGNGPA(IAR,N))
+	 WGNGPA(IAR) = WGNGPA(IAR) + FLOAT(MGNGPA(IAR,N))*XPROB(N)
+	 WGNTPA(IAR) = WGNTPA(IAR) + FLOAT(MGNTPA(IAR,N))*XPROB(N)
+	 WGNSPA(IAR) = WGNSPA(IAR) + FLOAT(MGNSPA(IAR,N))*XPROB(N)
    20 CONTINUE
-   
 C POOL STATISTICS, TOTAL, CUMULATE, WEIGHTED AVERAGE
       DO 22 IAR = 1, NOAREA
-        SWNGPA(IAR) = SWNGPA(IAR) + WGNGPA(IAR)
-        SWNTPA(IAR) = SWNTPA(IAR) + WGNTPA(IAR)
-        SWNSPA(IAR) = SWNSPA(IAR) + WGNSPA(IAR)
-        SWLGPA(IAR) = SWLGPA(IAR) + WOLGPA(IAR)
-        SWLTPA(IAR) = SWLTPA(IAR) + WOLTPA(IAR)
-   22   SWLSPA(IAR) = SWLSPA(IAR) + WOLSPA(IAR)
-   
+      SWNGPA(IAR) = SWNGPA(IAR) + WGNGPA(IAR)
+      SWNTPA(IAR) = SWNTPA(IAR) + WGNTPA(IAR)
+      SWNSPA(IAR) = SWNSPA(IAR) + WGNSPA(IAR)
+      SWLGPA(IAR) = SWLGPA(IAR) + WOLGPA(IAR)
+      SWLTPA(IAR) = SWLTPA(IAR) + WOLTPA(IAR)
+   22 SWLSPA(IAR) = SWLSPA(IAR) + WOLSPA(IAR)
       NOERR=NORR
       DO 28 IAR = 1, NOAREA
-        IPHOUR = LOLSHA(IAR,NOERR) + 1
-        IF (IPHOUR.GT.22) IPHOUR = 22
-        IPDP = LOLSPA(IAR,NOERR) + 1
-        IF (IPDP.GT.22) IPDP = 22
-        IPEUE = MGNSHA(IAR,NOERR)/LSTEP + 1
-        IF (IPEUE.GT.22) IPEUE = 22
-        HLOLE(IAR,IPHOUR) = HLOLE(IAR,IPHOUR) + 1.0
-        DPLOLE(IAR,IPDP) = DPLOLE(IAR,IPDP) + 1.0
-        EUES(IAR,IPEUE) = EUES(IAR,IPEUE) + 1.0
+      IPHOUR = LOLSHA(IAR,NOERR) + 1
+      IF (IPHOUR.GT.22) IPHOUR = 22
+      IPDP = LOLSPA(IAR,NOERR) + 1
+      IF (IPDP.GT.22) IPDP = 22
+      IPEUE = MGNSHA(IAR,NOERR)/LSTEP + 1
+      IF (IPEUE.GT.22) IPEUE = 22
+      HLOLE(IAR,IPHOUR) = HLOLE(IAR,IPHOUR) + 1.0
+      DPLOLE(IAR,IPDP) = DPLOLE(IAR,IPDP) + 1.0
+      EUES(IAR,IPEUE) = EUES(IAR,IPEUE) + 1.0
    28 CONTINUE
 
       DO 30 N = 1, NFCST
 C COMPUTE LOLES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	    LOLSHP(N) = LOLTHP(N) + LOLGHP(N)
-	    SOLSHP(N) = SOLSHP(N) + FLOAT(LOLSHP(N))
-	    SOLTHP(N) = SOLTHP(N) + FLOAT(LOLTHP(N))
-	    SOLGHP(N) = SOLGHP(N) + FLOAT(LOLGHP(N))
-	    WOLGHP = WOLGHP + FLOAT(LOLGHP(N))*XPROB(N)
-	    WOLTHP = WOLTHP + FLOAT(LOLTHP(N))*XPROB(N)
-	    WOLSHP = WOLSHP + FLOAT(LOLSHP(N))*XPROB(N)
+	 LOLSHP(N) = LOLTHP(N) + LOLGHP(N)
+	 SOLSHP(N) = SOLSHP(N) + FLOAT(LOLSHP(N))
+	 SOLTHP(N) = SOLTHP(N) + FLOAT(LOLTHP(N))
+	 SOLGHP(N) = SOLGHP(N) + FLOAT(LOLGHP(N))
+	 WOLGHP = WOLGHP + FLOAT(LOLGHP(N))*XPROB(N)
+	 WOLTHP = WOLTHP + FLOAT(LOLTHP(N))*XPROB(N)
+	 WOLSHP = WOLSHP + FLOAT(LOLSHP(N))*XPROB(N)
 C COMPUTE TOTAL MAGNITUDES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	    MGNSHP(N) = MGNTHP(N) + MGNGHP(N)
-	    SGNSHP(N) = SGNSHP(N) + FLOAT(MGNSHP(N))
-	    SGNTHP(N) = SGNTHP(N) + FLOAT(MGNTHP(N))
-	    SGNGHP(N) = SGNGHP(N) + FLOAT(MGNGHP(N))
-	    WGNGHP = WGNGHP + FLOAT(MGNGHP(N))*XPROB(N)
-	    WGNTHP = WGNTHP + FLOAT(MGNTHP(N))*XPROB(N)
-	    WGNSHP = WGNSHP + FLOAT(MGNSHP(N))*XPROB(N)
+	 MGNSHP(N) = MGNTHP(N) + MGNGHP(N)
+	 SGNSHP(N) = SGNSHP(N) + FLOAT(MGNSHP(N))
+	 SGNTHP(N) = SGNTHP(N) + FLOAT(MGNTHP(N))
+	 SGNGHP(N) = SGNGHP(N) + FLOAT(MGNGHP(N))
+	 WGNGHP = WGNGHP + FLOAT(MGNGHP(N))*XPROB(N)
+	 WGNTHP = WGNTHP + FLOAT(MGNTHP(N))*XPROB(N)
+	 WGNSHP = WGNSHP + FLOAT(MGNSHP(N))*XPROB(N)
    30 CONTINUE
-   
       SWNGHP = SWNGHP + WGNGHP
       SWNTHP = SWNTHP + WGNTHP
       SWNSHP = SWNSHP + WGNSHP
       SWLGHP = SWLGHP + WOLGHP
       SWLTHP = SWLTHP + WOLTHP
       SWLSHP = SWLSHP + WOLSHP
-	  
       DO 40 N = 1, NFCST
 
 C COMPUTE LOLES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	    LOLSPP(N) = LOLTPP(N) + LOLGPP(N)
-	    SOLSPP(N) = SOLSPP(N) + FLOAT(LOLSPP(N))
-	    SOLTPP(N) = SOLTPP(N) + FLOAT(LOLTPP(N))
-	    SOLGPP(N) = SOLGPP(N) + FLOAT(LOLGPP(N))
-	    WOLGPP = WOLGPP + FLOAT(LOLGPP(N))*XPROB(N)
-	    WOLTPP = WOLTPP + FLOAT(LOLTPP(N))*XPROB(N)
-	    WOLSPP = WOLSPP + FLOAT(LOLSPP(N))*XPROB(N)
-C COM   PUTE TOTAL MAGNITUDES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
-	    MGNSPP(N) = MGNTPP(N) + MGNGPP(N)
-	    SGNSPP(N) = SGNSPP(N) + FLOAT(MGNSPP(N))
-	    SGNTPP(N) = SGNTPP(N) + FLOAT(MGNTPP(N))
-	    SGNGPP(N) = SGNGPP(N) + FLOAT(MGNGPP(N))
-	    WGNGPP = WGNGPP + FLOAT(MGNGPP(N))*XPROB(N)
-	    WGNTPP = WGNTPP + FLOAT(MGNTPP(N))*XPROB(N)
-	    WGNSPP = WGNSPP + FLOAT(MGNSPP(N))*XPROB(N)
+	 LOLSPP(N) = LOLTPP(N) + LOLGPP(N)
+	 SOLSPP(N) = SOLSPP(N) + FLOAT(LOLSPP(N))
+	 SOLTPP(N) = SOLTPP(N) + FLOAT(LOLTPP(N))
+	 SOLGPP(N) = SOLGPP(N) + FLOAT(LOLGPP(N))
+	 WOLGPP = WOLGPP + FLOAT(LOLGPP(N))*XPROB(N)
+	 WOLTPP = WOLTPP + FLOAT(LOLTPP(N))*XPROB(N)
+	 WOLSPP = WOLSPP + FLOAT(LOLSPP(N))*XPROB(N)
+C COMPUTE TOTAL MAGNITUDES, SUM FOR FINAL REPORT, TAKE WEIGHTED AVG
+	 MGNSPP(N) = MGNTPP(N) + MGNGPP(N)
+	 SGNSPP(N) = SGNSPP(N) + FLOAT(MGNSPP(N))
+	 SGNTPP(N) = SGNTPP(N) + FLOAT(MGNTPP(N))
+	 SGNGPP(N) = SGNGPP(N) + FLOAT(MGNGPP(N))
+	 WGNGPP = WGNGPP + FLOAT(MGNGPP(N))*XPROB(N)
+	 WGNTPP = WGNTPP + FLOAT(MGNTPP(N))*XPROB(N)
+	 WGNSPP = WGNSPP + FLOAT(MGNSPP(N))*XPROB(N)
    40 CONTINUE
-   
       SWNGPP = SWNGPP + WGNGPP
       SWNTPP = SWNTPP + WGNTPP
       SWNSPP = SWNSPP + WGNSPP
       SWLGPP = SWLGPP + WOLGPP
       SWLTPP = SWLTPP + WOLTPP
       SWLSPP = SWLSPP + WOLSPP
-	  
 C COMPUTE SQUARE OF VARIABLES
       DO 45 IAR=1,NOAREA
-        XNEWA(IAR,1)=XNEWA(IAR,1)+(WOLSHA(IAR))**2
-        XNEWA(IAR,2)=XNEWA(IAR,2)+(WGNSHA(IAR))**2
-        XNEWA(IAR,3)=XNEWA(IAR,3)+(WOLSPA(IAR))**2
+      XNEWA(IAR,1)=XNEWA(IAR,1)+(WOLSHA(IAR))**2
+      XNEWA(IAR,2)=XNEWA(IAR,2)+(WGNSHA(IAR))**2
+      XNEWA(IAR,3)=XNEWA(IAR,3)+(WOLSPA(IAR))**2
  45   CONTINUE
- 
       XNEWP(1)=XNEWP(1)+WOLSHP**2
       XNEWP(2)=XNEWP(2)+WGNSHP**2
       XNEWP(3)=XNEWP(3)+WOLSPP**2
-	  
 C PRINT ANNUALS & RESET TO 0
  1005 FORMAT(1H1)
  2030 FORMAT(2X,I2,2X,I2,9X,F8.2,2X,F8.2,12X,A2)
@@ -3149,311 +2835,260 @@ C PRINT ANNUALS & RESET TO 0
      *'XLOL')
  1004 FORMAT(16X,'(HRS/YR)',2X,'(MW)',6X,'(MWH)',5X,'(DAYS/YR)',2X
      *,'(MW)')
-	 
       IF(IOJ.EQ.0)GO TO 61
       WRITE(16,1005)
       ITAB=ITAB+1
       WRITE(16,1000)ITAB
 C     IF (MOD(IYEAR,10).EQ.0) WRITE(*,1000) IYEAR
       WRITE(16,1001)IYEAR
-	  
       IF(INDX.EQ.1)GO TO 201
-        WRITE(16,1002)
-        WRITE(16,1003)
-        WRITE(16,1004)
-        GO TO 205
+      WRITE(16,1002)
+      WRITE(16,1003)
+      WRITE(16,1004)
+      GO TO 205
  201  CONTINUE
- 
       WRITE(16,2002)
       WRITE(16,2003)
       WRITE(16,2004)
  205  CONTINUE
- 
       DO 60 J=1, NOAREA
-	    DO 50 N = 1, NFCST
-	      IF (LOLGHA(J,N).GT.0) THEN
-	        XMGNA = FLOAT(MGNGHA(J,N))/FLOAT(LOLGHA(J,N))
-	      ELSE
-	        XMGNA = 0.0
-	      ENDIF
-	      
-		  IF (LOLGPA(J,N).GT.0) THEN
-	        XMGNP = FLOAT(MGNGPA(J,N))/FLOAT(LOLGPA(J,N))
-	      ELSE
-	        XMGNP = 0.0
-	      ENDIF
-		  
-          IF(INDX.EQ.1)GO TO 211
-            WRITE(16,1030)J, N,LOLGHA(J,N),XMGNA,MGNGHA(J,N)
-            *,LOLGPA(J,N),XMGNP,XG
-            GO TO 215
- 211      CONTINUE
-          
-		  WRITE(16,2030)J,N,LOLGPA(J,N),XMGNP,XG
- 215      CONTINUE
-	      
-		  IF (LOLTHA(J,N).GT.0) THEN
-	        XMGNA = FLOAT(MGNTHA(J,N))/FLOAT(LOLTHA(J,N))
-	      ELSE
-	        XMGNA = 0.0
-	      ENDIF
-	
-	      IF (LOLTPA(J,N).GT.0) THEN
-	        XMGNP = FLOAT(MGNTPA(J,N))/FLOAT(LOLTPA(J,N))
-	      ELSE
-	        XMGNP = 0.0
-	      ENDIF
-		  
-          IF(INDX.EQ.1)GO TO 207
-            WRITE(16,1030)J, N,LOLTHA(J,N),XMGNA,MGNTHA(J,N)
-            *,LOLTPA(J,N),XMGNP,XT
-            GO TO 208
- 207      WRITE(16,2030)J,N,LOLTPA(J,N),XMGNP,XT
- 208      CONTINUE
- 
-	      IF (LOLSHA(J,N).GT.0) THEN
-	        XMGNA = FLOAT(MGNSHA(J,N))/FLOAT(LOLSHA(J,N))
-	      ELSE
-	        XMGNA = 0.0
-	      ENDIF
-		  
-	      IF (LOLSPA(J,N).GT.0) THEN
-	        XMGNP = FLOAT(MGNSPA(J,N))/FLOAT(LOLSPA(J,N))
-	      ELSE
-	        XMGNP = 0.0
-	      ENDIF
-		  
-          IF(INDX.EQ.1)GO TO 209
-            WRITE(16,1030)J,N,LOLSHA(J,N),XMGNA,MGNSHA(J,N)
-            *,LOLSPA(J,N),XMGNP,XS
-          GO TO 210
- 209      WRITE(16,2030)J,N,LOLSPA(J,N),XMGNP,XT
- 210      CONTINUE
- 
- 50     CONTINUE
- 
- 1030   FORMAT(2X,I2,2X,I2,5X,I4,5X,F8.2,2X,I8
-        *,5X,I4,5X,F8.2,12X,A2)
- 1031   FORMAT(6X,I2,5X,I4,5X,F8.2,2X,I8
-        *,5X,I4,5X,F8.2,12X,A2)
-	    
-		IF (WOLGHA(J).GT.0.0) THEN
-          XMGNA = WGNGHA(J)/WOLGHA(J)
-	    ELSE
-	      XMGNA = 0.0
-	    ENDIF
-	    
-		IF (WOLGPA(J).GT.0.0) THEN
-          XMGNP = WGNGPA(J)/WOLGPA(J)
-	    ELSE
-	      XMGNP = 0.0
-	    ENDIF
-		
-        IF(INDX.EQ.1)GO TO 221
-          WRITE(16,1040)J,XA,WOLGHA(J),XMGNA,WGNGHA(J)
-          *,WOLGPA(J),XMGNP,XG
-        GO TO 225
- 221    CONTINUE
-        WRITE(16,2040)J,XA,WOLGPA(J),XMGNP,XG
- 225    CONTINUE
-	    
-		IF (WOLTHA(J).GT.0.0) THEN
-          XMGNA = WGNTHA(J)/WOLTHA(J)
-	    ELSE
-	      XMGNA = 0.0
-	    ENDIF
-	    
-		IF (WOLTPA(J).GT.0.0) THEN
-          XMGNP = WGNTPA(J)/WOLTPA(J)
-	    ELSE
-	      XMGNP = 0.0
-	    ENDIF
-        
-		IF(INDX.EQ.1)GO TO 241
-          WRITE(16,1040)J,XA,WOLTHA(J),XMGNA,WGNTHA(J)
-          *,WOLTPA(J),XMGNP,XT
-        GO TO 245
- 241    CONTINUE
-        WRITE(16,2040)J,XA,WOLTPA(J),XMGNP,XT
- 245    CONTINUE
-	    
-		IF (WOLSHA(J).GT.0.0) THEN
-          XMGNA = WGNSHA(J)/WOLSHA(J)
-	    ELSE
-	      XMGNA = 0.0
-	    ENDIF
-	
-	    IF (WOLSPA(J).GT.0.0) THEN
-          XMGNP = WGNSPA(J)/WOLSPA(J)
-	    ELSE
-	      XMGNP = 0.0
-	    ENDIF
-      
-	    IF(INDX.EQ.1)GO TO 231
-          WRITE(16,1040)J,XA,WOLSHA(J),XMGNA,WGNSHA(J)
-          *,WOLSPA(J),XMGNP,XS
-        GO TO 235
- 231    CONTINUE
-        WRITE(16,2040)J,XA,WOLSPA(J),XMGNP,XS
- 235    CONTINUE
- 
- 1040   FORMAT(2X,I2,2X,A2,5X,F7.2,2X,F8.2,3X,F7.0
-        *,5X,F7.2,2X,F8.2,12X,A2)
- 1041   FORMAT(6X,A2,5X,F7.2,2X,F8.2,3X,F7.0
-        *,5X,F7.2,2X,F8.2,12X,A2)
+	DO 50 N = 1, NFCST
+	IF (LOLGHA(J,N).GT.0) THEN
+	XMGNA = FLOAT(MGNGHA(J,N))/FLOAT(LOLGHA(J,N))
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (LOLGPA(J,N).GT.0) THEN
+	 XMGNP = FLOAT(MGNGPA(J,N))/FLOAT(LOLGPA(J,N))
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 211
+      WRITE(16,1030)J, N,LOLGHA(J,N),XMGNA,MGNGHA(J,N)
+     *,LOLGPA(J,N),XMGNP,XG
+       GO TO 215
+ 211   CONTINUE
+       WRITE(16,2030)J,N,LOLGPA(J,N),XMGNP,XG
+ 215   CONTINUE
+	IF (LOLTHA(J,N).GT.0) THEN
+	XMGNA = FLOAT(MGNTHA(J,N))/FLOAT(LOLTHA(J,N))
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (LOLTPA(J,N).GT.0) THEN
+	 XMGNP = FLOAT(MGNTPA(J,N))/FLOAT(LOLTPA(J,N))
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 207
+      WRITE(16,1030)J, N,LOLTHA(J,N),XMGNA,MGNTHA(J,N)
+     *,LOLTPA(J,N),XMGNP,XT
+      GO TO 208
+ 207  WRITE(16,2030)J,N,LOLTPA(J,N),XMGNP,XT
+ 208  CONTINUE
+	IF (LOLSHA(J,N).GT.0) THEN
+	XMGNA = FLOAT(MGNSHA(J,N))/FLOAT(LOLSHA(J,N))
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (LOLSPA(J,N).GT.0) THEN
+	 XMGNP = FLOAT(MGNSPA(J,N))/FLOAT(LOLSPA(J,N))
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 209
+      WRITE(16,1030)J,N,LOLSHA(J,N),XMGNA,MGNSHA(J,N)
+     *,LOLSPA(J,N),XMGNP,XS
+      GO TO 210
+ 209  WRITE(16,2030)J,N,LOLSPA(J,N),XMGNP,XT
+ 210  CONTINUE
+ 50   CONTINUE
+ 1030 FORMAT(2X,I2,2X,I2,5X,I4,5X,F8.2,2X,I8
+     *,5X,I4,5X,F8.2,12X,A2)
+ 1031 FORMAT(6X,I2,5X,I4,5X,F8.2,2X,I8
+     *,5X,I4,5X,F8.2,12X,A2)
+	IF (WOLGHA(J).GT.0.0) THEN
+      XMGNA = WGNGHA(J)/WOLGHA(J)
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (WOLGPA(J).GT.0.0) THEN
+      XMGNP = WGNGPA(J)/WOLGPA(J)
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 221
+      WRITE(16,1040)J,XA,WOLGHA(J),XMGNA,WGNGHA(J)
+     *,WOLGPA(J),XMGNP,XG
+      GO TO 225
+ 221  CONTINUE
+      WRITE(16,2040)J,XA,WOLGPA(J),XMGNP,XG
+ 225  CONTINUE
+	IF (WOLTHA(J).GT.0.0) THEN
+      XMGNA = WGNTHA(J)/WOLTHA(J)
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (WOLTPA(J).GT.0.0) THEN
+      XMGNP = WGNTPA(J)/WOLTPA(J)
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 241
+      WRITE(16,1040)J,XA,WOLTHA(J),XMGNA,WGNTHA(J)
+     *,WOLTPA(J),XMGNP,XT
+      GO TO 245
+ 241  CONTINUE
+      WRITE(16,2040)J,XA,WOLTPA(J),XMGNP,XT
+ 245  CONTINUE
+	IF (WOLSHA(J).GT.0.0) THEN
+      XMGNA = WGNSHA(J)/WOLSHA(J)
+	ELSE
+	XMGNA = 0.0
+	ENDIF
+	IF (WOLSPA(J).GT.0.0) THEN
+      XMGNP = WGNSPA(J)/WOLSPA(J)
+	ELSE
+	XMGNP = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 231
+      WRITE(16,1040)J,XA,WOLSHA(J),XMGNA,WGNSHA(J)
+     *,WOLSPA(J),XMGNP,XS
+      GO TO 235
+ 231  CONTINUE
+      WRITE(16,2040)J,XA,WOLSPA(J),XMGNP,XS
+ 235  CONTINUE
+ 1040 FORMAT(2X,I2,2X,A2,5X,F7.2,2X,F8.2,3X,F7.0
+     *,5X,F7.2,2X,F8.2,12X,A2)
+ 1041 FORMAT(6X,A2,5X,F7.2,2X,F8.2,3X,F7.0
+     *,5X,F7.2,2X,F8.2,12X,A2)
    60 CONTINUE
-   
-   
 C POOL STATISTICS
       WRITE(16,1060)
  1060 FORMAT (' ',/,10X,' POOL STATISTICS',/)
- 
       DO 70 N = 1, NFCST
-	    IF (LOLGHP(N).GT.0) THEN
-	      XMGNH = FLOAT(MGNGHP(N))/FLOAT(LOLGHP(N))
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-	
-	    IF (LOLGPP(N).GT.0) THEN
-	      XMGNP = FLOAT(MGNGPP(N))/FLOAT(LOLGPP(N))
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-      
-	    IF(INDX.EQ.1)GO TO 261
-          WRITE(16,1031) N,LOLGHP(N),XMGNH,MGNGHP(N)
-          *,LOLGPP(N),XMGNP,XG
-        GO TO 265
- 261    CONTINUE
-        WRITE(16,2031)N,LOLGPP(N),XMGNP,XG
- 265    CONTINUE
-	    
-		IF (LOLTHP(N).GT.0) THEN
-	      XMGNH = FLOAT(MGNTHP(N))/FLOAT(LOLTHP(N))
-	    ELSE
-	      XMGNH = 0.0
-	    ENDIF
-	    
-		IF (LOLTPP(N).GT.0) THEN
-	      XMGNP= FLOAT(MGNTPP(N))/FLOAT(LOLTPP(N))
-	    ELSE
-	      XMGNP= 0.0
-	    ENDIF
-		
-        IF(INDX.EQ.1)GO TO 251
-          WRITE(16,1031) N,LOLTHP(N),XMGNH,MGNTHP(N)
-          *,LOLTPP(N),XMGNP,XT
-        GO TO 255
- 251    CONTINUE
-        WRITE(16,2031) N,LOLTPP(N),XMGNP,XT
- 255    CONTINUE
-	
-	    IF (LOLSHP(N).GT.0) THEN
-	      XMGNH= FLOAT(MGNSHP(N))/FLOAT(LOLSHP(N))
-	    ELSE
-	      XMGNH= 0.0
-	    ENDIF
-	
-	    IF (LOLSPP(N).GT.0) THEN
-	      XMGNP= FLOAT(MGNSPP(N))/FLOAT(LOLSPP(N))
-	    ELSE
-	      XMGNP= 0.0
-	    ENDIF
-       
-	   IF(INDX.EQ.1)GO TO 271
-         WRITE(16,1031) N,LOLSHP(N),XMGNH,MGNSHP(N)
-         *,LOLSPP(N),XMGNP,XS
+	IF (LOLGHP(N).GT.0) THEN
+	 XMGNH = FLOAT(MGNGHP(N))/FLOAT(LOLGHP(N))
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	IF (LOLGPP(N).GT.0) THEN
+	  XMGNP = FLOAT(MGNGPP(N))/FLOAT(LOLGPP(N))
+	ELSE
+	XMGN = 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 261
+      WRITE(16,1031) N,LOLGHP(N),XMGNH,MGNGHP(N)
+     *,LOLGPP(N),XMGNP,XG
+      GO TO 265
+ 261  CONTINUE
+      WRITE(16,2031)N,LOLGPP(N),XMGNP,XG
+ 265  CONTINUE
+	IF (LOLTHP(N).GT.0) THEN
+	 XMGNH = FLOAT(MGNTHP(N))/FLOAT(LOLTHP(N))
+	ELSE
+	XMGNH = 0.0
+	ENDIF
+	IF (LOLTPP(N).GT.0) THEN
+	  XMGNP= FLOAT(MGNTPP(N))/FLOAT(LOLTPP(N))
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 251
+      WRITE(16,1031) N,LOLTHP(N),XMGNH,MGNTHP(N)
+     *,LOLTPP(N),XMGNP,XT
+      GO TO 255
+ 251  CONTINUE
+      WRITE(16,2031) N,LOLTPP(N),XMGNP,XT
+ 255  CONTINUE
+	IF (LOLSHP(N).GT.0) THEN
+	 XMGNH= FLOAT(MGNSHP(N))/FLOAT(LOLSHP(N))
+	ELSE
+	XMGNH= 0.0
+	ENDIF
+	IF (LOLSPP(N).GT.0) THEN
+	  XMGNP= FLOAT(MGNSPP(N))/FLOAT(LOLSPP(N))
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 271
+      WRITE(16,1031) N,LOLSHP(N),XMGNH,MGNSHP(N)
+     *,LOLSPP(N),XMGNP,XS
        GO TO 275
  271   CONTINUE
        WRITE(16,2031)N,LOLSPP(N),XMGNP,XS
  275   CONTINUE
- 
- 70  CONTINUE
-	 
-	 IF (WOLGHP.GT.0.0) THEN
-       XMGNH= WGNGHP/WOLGHP
-	 ELSE
-	   XMGNH= 0.0
-	 ENDIF
-	
-	 IF (WOLGPP.GT.0.0) THEN
-       XMGNP= WGNGPP/WOLGPP
-	 ELSE
-	   XMGNP= 0.0
-	 ENDIF
-     
-	 IF(INDX.EQ.1)GO TO 281
-       WRITE(16,1041)XA,WOLGHP,XMGNH,WGNGHP
-       *,WOLGPP,XMGNP,XG
+ 70    CONTINUE
+	IF (WOLGHP.GT.0.0) THEN
+      XMGNH= WGNGHP/WOLGHP
+	ELSE
+	XMGNH= 0.0
+	ENDIF
+	IF (WOLGPP.GT.0.0) THEN
+      XMGNP= WGNGPP/WOLGPP
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 281
+      WRITE(16,1041)XA,WOLGHP,XMGNH,WGNGHP
+     *,WOLGPP,XMGNP,XG
       GO TO 285
- 281 CONTINUE
-     WRITE(16,2041)XA,WOLGPP,XMGNP,XG
- 285 CONTINUE
- 
-	 IF (WOLTHP.GT.0.0) THEN
-       XMGNH= WGNTHP/WOLTHP
-	 ELSE
-	   XMGNH= 0.0
-	 ENDIF
-	 
-	 IF (WOLTPP.GT.0.0) THEN
-       XMGNP= WGNTPP/WOLTPP
-	 ELSE
-	   XMGNP= 0.0
-	 ENDIF
-     
-	 IF(INDX.EQ.1)GO TO 291
-       WRITE(16,1041)XA,WOLTHP,XMGNH,WGNTHP
-      *,WOLTPP,XMGNP,XT
+ 281  CONTINUE
+      WRITE(16,2041)XA,WOLGPP,XMGNP,XG
+ 285  CONTINUE
+	IF (WOLTHP.GT.0.0) THEN
+      XMGNH= WGNTHP/WOLTHP
+	ELSE
+	XMGNH= 0.0
+	ENDIF
+	IF (WOLTPP.GT.0.0) THEN
+      XMGNP= WGNTPP/WOLTPP
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 291
+      WRITE(16,1041)XA,WOLTHP,XMGNH,WGNTHP
+     *,WOLTPP,XMGNP,XT
        GO TO 295
- 291 CONTINUE
+ 291   CONTINUE
        WRITE(16,2041)XA,WOLTPP,XMGNP,XT
- 295 CONTINUE
- 
-	 IF (WOLSHP.GT.0.0) THEN
-       XMGNH= WGNSHP/WOLSHP
-	 ELSE
-	   XMGNH= 0.0
-	 ENDIF
-	
-	 IF (WOLSPP.GT.0.0) THEN
-       XMGNP= WGNSPP/WOLSPP
-	 ELSE
-	   XMGNP= 0.0
-     ENDIF
-     
-	 IF(INDX.EQ.1)GO TO 301
-       WRITE(16,1041)XA,WOLSHP,XMGNH,WGNSHP
-       *,WOLSPP,XMGNP,XS
+ 295   CONTINUE
+	IF (WOLSHP.GT.0.0) THEN
+      XMGNH= WGNSHP/WOLSHP
+	ELSE
+	XMGNH= 0.0
+	ENDIF
+	IF (WOLSPP.GT.0.0) THEN
+      XMGNP= WGNSPP/WOLSPP
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+      IF(INDX.EQ.1)GO TO 301
+      WRITE(16,1041)XA,WOLSHP,XMGNH,WGNSHP
+     *,WOLSPP,XMGNP,XS
       GO TO 305
- 301 CONTINUE
-       WRITE(16,2041)XA, WOLSPP,XMGNP,XS
- 305 CONTINUE
- 
-  61 CONTINUE
-  
+ 301  CONTINUE
+      WRITE(16,2041)XA, WOLSPP,XMGNP,XS
+ 305  CONTINUE
+  61  CONTINUE
 C ZERO OUT THE ACCUMULATORS
       DO 5 IAR = 1, NOAREA
-        WGNGHA(IAR)=0.0
-        WGNTHA(IAR)=0.0
-        WGNSHA(IAR)=0.0
-        WOLGHA(IAR)=0.0
-        WOLTHA(IAR)=0.0
-    5   WOLSHA(IAR)=0.0
-      
-	  DO 15 IAR = 1, NOAREA
-        WGNGPA(IAR)=0.0
-        WGNTPA(IAR)=0.0
-        WGNSPA(IAR)=0.0
-        WOLGPA(IAR)=0.0
-        WOLTPA(IAR)=0.0
-   15   WOLSPA(IAR)=0.0
-      
-	  DO 25 IAR = 1, NOAREA
-        WGNSPA(IAR)=0.0
-   25   WOLSPA(IAR)=0.0
-   
+      WGNGHA(IAR)=0.0
+      WGNTHA(IAR)=0.0
+      WGNSHA(IAR)=0.0
+      WOLGHA(IAR)=0.0
+      WOLTHA(IAR)=0.0
+    5 WOLSHA(IAR)=0.0
+      DO 15 IAR = 1, NOAREA
+      WGNGPA(IAR)=0.0
+      WGNTPA(IAR)=0.0
+      WGNSPA(IAR)=0.0
+      WOLGPA(IAR)=0.0
+      WOLTPA(IAR)=0.0
+   15 WOLSPA(IAR)=0.0
+      DO 25 IAR = 1, NOAREA
+      WGNSPA(IAR)=0.0
+   25 WOLSPA(IAR)=0.0
       WGNSHP=0.0
       WOLSHP=0.0
       WGNSPP=0.0
@@ -3468,131 +3103,116 @@ C ZERO OUT THE ACCUMULATORS
       WOLTPP=0.0
 
       DO 100 N = 1,NFCST
-        DO 90 IAR = 1, NOAREA
-          LOLTHA(IAR,N) = 0
-          LOLGHA(IAR,N) = 0
-          MGNTHA(IAR,N) = 0
-          MGNGHA(IAR,N) = 0
-          LOLTPA(IAR,N) = 0
-          LOLGPA(IAR,N) = 0
-          MGNTPA(IAR,N) = 0
-          MGNGPA(IAR,N) = 0
-   90   CONTINUE
-       LOLTHP(N) = 0
-       LOLGHP(N) = 0
-       MGNTHP(N) = 0
-       MGNGHP(N) = 0
-       LOLTPP(N) = 0
-       LOLGPP(N) = 0
-       MGNTPP(N) = 0
-       MGNGPP(N) = 0
+      DO 90 IAR = 1, NOAREA
+      LOLTHA(IAR,N) = 0
+      LOLGHA(IAR,N) = 0
+      MGNTHA(IAR,N) = 0
+      MGNGHA(IAR,N) = 0
+      LOLTPA(IAR,N) = 0
+      LOLGPA(IAR,N) = 0
+      MGNTPA(IAR,N) = 0
+      MGNGPA(IAR,N) = 0
+   90 CONTINUE
+      LOLTHP(N) = 0
+      LOLGHP(N) = 0
+      MGNTHP(N) = 0
+      MGNGHP(N) = 0
+      LOLTPP(N) = 0
+      LOLGPP(N) = 0
+      MGNTPP(N) = 0
+      MGNGPP(N) = 0
   100 CONTINUE
-  
       IF(IYEAR.LE.5)WRITE(*,461) KWHERE, KVWHEN, KVSTAT, KVTYPE, KVLOC
   461 FORMAT(' ',' KVs = ',5I4)
-  
-  
 C BEGIN CHECKING FOR CONVERGENCE
       IF (KWHERE.EQ.1) THEN
-	    IF (KVWHEN.EQ.1) THEN
-	      IF (KVSTAT.EQ.1) THEN
+	 IF (KVWHEN.EQ.1) THEN
+	    IF (KVSTAT.EQ.1) THEN
 C LOOP FOR HOURLY, AREA, LOLE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWLSHA(KVLOC)
-	        ELSE
-		      SUM = SOLSHA(KVLOC,NOERR)
-	        ENDIF
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWLSHA(KVLOC)
+	       ELSE
+		  SUM = SOLSHA(KVLOC,NOERR)
+	       ENDIF
 C KVSTAT = 2, LOOP FOR HOURLY, AREA, EUE
-	      ELSE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWNSHA(KVLOC)
-	        ELSE
-		      SUM = SGNSHA(KVLOC,NOERR)
-	        ENDIF
-	      ENDIF
-C KVWHEN = 2, LOOP FOR PEAK, AREA, LOLE
-        ELSE
-	      IF (KVSTAT.EQ.1) THEN
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWLSPA(KVLOC)
-	        ELSE
-		      SUM = SOLSPA(KVLOC,NOERR)
-		    ENDIF
-C KVWHEN=2, KVSTAT = 2, LOOP FOR PEAK, AREA, EUES
-	      ELSE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWNSPA(KVLOC)
-	        ELSE
-		      SUM = SGNSPA(KVLOC,NOERR)
-	        ENDIF
-	      ENDIF
-	    ENDIF
-      ELSE
-	    IF (KVWHEN.EQ.1) THEN
-	      IF (KVSTAT.EQ.1) THEN
-C LOOP FOR HOURLY, POOL, LOLE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWLSHP
-	        ELSE
-		      SUM = SOLSHP(NOERR)
-	        ENDIF
-C KVSTAT = 2, LOOP FOR HOURLY, POOL, EUE
-	      ELSE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWNSHP
-	        ELSE
-		      SUM = SGNSHP(NOERR)
-	        ENDIF
-	      ENDIF
-C KVWHEN = 2, LOOP FOR PEAK, POOL, LOLE
 	    ELSE
-	      IF (KVSTAT.EQ.1) THEN
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWLSPP
-	        ELSE
-		      SUM = SOLSPP(NOERR)
-		    ENDIF
-C KVWHEN=2, KVSTAT = 2, LOOP FOR PEAK, POOL, EUES
-	      ELSE
-	        IF (KVTYPE.EQ.1) THEN
-		      SUM = SWNSPP
-	        ELSE
-		      SUM = SGNSPP(NOERR)
-	        ENDIF
-	      ENDIF
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWNSHA(KVLOC)
+	       ELSE
+		  SUM = SGNSHA(KVLOC,NOERR)
+	       ENDIF
 	    ENDIF
+C KVWHEN = 2, LOOP FOR PEAK, AREA, LOLE
+	 ELSE
+	    IF (KVSTAT.EQ.1) THEN
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWLSPA(KVLOC)
+	       ELSE
+		  SUM = SOLSPA(KVLOC,NOERR)
+		ENDIF
+C KVWHEN=2, KVSTAT = 2, LOOP FOR PEAK, AREA, EUES
+	    ELSE
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWNSPA(KVLOC)
+	       ELSE
+		  SUM = SGNSPA(KVLOC,NOERR)
+	       ENDIF
+	    ENDIF
+	 ENDIF
+      ELSE
+	 IF (KVWHEN.EQ.1) THEN
+	    IF (KVSTAT.EQ.1) THEN
+C LOOP FOR HOURLY, POOL, LOLE
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWLSHP
+	       ELSE
+		  SUM = SOLSHP(NOERR)
+	       ENDIF
+C KVSTAT = 2, LOOP FOR HOURLY, POOL, EUE
+	    ELSE
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWNSHP
+	       ELSE
+		  SUM = SGNSHP(NOERR)
+	       ENDIF
+	    ENDIF
+C KVWHEN = 2, LOOP FOR PEAK, POOL, LOLE
+	 ELSE
+	    IF (KVSTAT.EQ.1) THEN
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWLSPP
+	       ELSE
+		  SUM = SOLSPP(NOERR)
+		ENDIF
+C KVWHEN=2, KVSTAT = 2, LOOP FOR PEAK, POOL, EUES
+	    ELSE
+	       IF (KVTYPE.EQ.1) THEN
+		  SUM = SWNSPP
+	       ELSE
+		  SUM = SGNSPP(NOERR)
+	       ENDIF
+	    ENDIF
+	 ENDIF
       ENDIF
-	  
-	  SUMX=SUM
+	SUMX=SUM
       CALL CVCHK(SUM,IYEAR,RFLAG)
       NOERR=1
-	  
 C      WRITE(*,*)CLOCK,FINISH,RFLAG,IYEAR,INDUMP(IYEAR)
 C     IF(INDUMP(IYEAR).EQ.1)CALL INTM
 C LOGIC ADDED FOR CALLING INTM WITHOUT USING INDUMP
-
       IF(IYEAR.EQ.INTVT)CALL INTM
-	  
       IFIN=FINISH/8760
-	  
       IF(IYEAR.EQ.INTVT)GO TO 102
-        IF(IYEAR.EQ.IFIN)CALL INTM
+      IF(IYEAR.EQ.IFIN)CALL INTM
  102  CONTINUE
- 
       IF(IYEAR.EQ.INTVT)INTVT=INTVT+INTV
-	  
       IF (RFLAG.EQ.1.0) CALL REPORT(IYEAR)
-	  
       IF(RFLAG.EQ.1)GO TO 101
-        IF (CLOCK.GE.FINISH) CALL REPORT(IYEAR)
+      IF (CLOCK.GE.FINISH) CALL REPORT(IYEAR)
  101  CONTINUE
- 
       RETURN
       END
 
-	  
-	  
-	  
 	SUBROUTINE REPORT(IYEAR)
 
 C  MADE SEVERAL MINOR CHANGES TO MAKE STANDARD WITH FTN RULES ... GENE 1/26/89
@@ -3603,7 +3223,6 @@ C  MADE SEVERAL MINOR CHANGES TO MAKE STANDARD WITH FTN RULES ... GENE 1/26/89
       INCLUDE 'NARPCOM.txt'
       DATA SUMHL,SUMDP,SUMEUE,PHL,PDP,PEUE/1035*0/
       DATA XG/'GC'/,XT/'TC'/,XS/'GT'/,XA/'AV'/,FH/'ERCO'/,SH/'T'/
-	  
  2030 FORMAT(2X,I2,2X,I2,9X,F8.2,2X,F8.2,12X,A2)
  2031 FORMAT(6X,I2,9X,F8.2,2X,F8.2,12X,A2)
  2040 FORMAT(2X,I2,2X,A2,9X,F8.2,2X,F8.2,12X,A2)
@@ -3619,20 +3238,15 @@ C  MADE SEVERAL MINOR CHANGES TO MAKE STANDARD WITH FTN RULES ... GENE 1/26/89
      *,5X,F7.2,2X,F8.2,12X,A2)
  1041 FORMAT(6X,A2,5X,F7.3,2X,F8.2,3X,F7.0
      *,5X,F7.3,2X,F8.2,12X,A2)
-	 
-	  XYEAR = FLOAT(IYEAR)
-	  
+	XYEAR = FLOAT(IYEAR)
  1005 FORMAT(1H1)
       ITAB=ITAB+1
       WRITE(16,1005)
       WRITE(16,1000)ITAB
-	  
 C     IF (MOD(IYEAR,10).EQ.0) WRITE(*,1000) IYEAR
  1000 FORMAT(31X,'TABLE',I5,/)
  1006 FORMAT(16X,'TABLE',I5,/)
- 
       WRITE(16,1001)IYEAR
-	  
  1001 FORMAT(15X,'FINAL RESULTS AFTER ',I6,' REPLICATIONS',/)
  1002 FORMAT(2X,'AREA FORECAST',4X,'HOURLY STATISTICS',11X,'PEAK STATIST
      *ICS',11X,'REMARKS')
@@ -3640,177 +3254,149 @@ C     IF (MOD(IYEAR,10).EQ.0) WRITE(*,1000) IYEAR
      *'XLOL')
  1004 FORMAT(16X,'(HRS/YR)',2X,'(MW)',6X,'(MWH)',5X,'(DAYS/YR)',2X
      *,'(MW)')
-	 
       IF(INDX.EQ.1)GO TO 201
-        WRITE(16,1002)
-        WRITE(16,1003)
-        WRITE(16,1004)
+      WRITE(16,1002)
+      WRITE(16,1003)
+      WRITE(16,1004)
       GO TO 205
-		
  201    WRITE(16,2002)
-        WRITE(16,2003)
-        WRITE(16,2004)
- 205  CONTINUE
- 
+       WRITE(16,2003)
+       WRITE(16,2004)
+ 205    CONTINUE
 	DO 60 J=1, NOAREA
-	  IF(NFCST.EQ.1)GO TO 11476
-	  
-	  DO 50 N = 1, NFCST
-	    IF (SOLGHA(J,N).GT.0.) THEN
-	      XMGN = SGNGHA(J,N)/SOLGHA(J,N)
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-	    XLOL = SOLGHA(J,N)/XYEAR
-	    EUE  = SGNGHA(J,N)/XYEAR
-		
-	    IF (SOLGPA(J,N).GT.0.) THEN
-	      XMGNP= SGNGPA(J,N)/SOLGPA(J,N)
-	    ELSE
-	      XMGNP= 0.0
-	    ENDIF
-	
-	    XLOLP= SOLGPA(J,N)/XYEAR
-	    EUEP = SGNGPA(J,N)/XYEAR
-        
-		IF(INDX.EQ.1)GO TO 211
-        
-		WRITE(16,1030)J,N,XLOL,XMGN,EUE
-        *,XLOLP,XMGNP,XG
-        
-		GO TO 215
- 211    CONTINUE
-        WRITE(16,2030)J,N,XLOLP,XMGNP,XG
-		
- 215    CONTINUE
-	    IF (SOLTHA(J,N).GT.0.) THEN
-	      XMGN = SGNTHA(J,N)/SOLTHA(J,N)
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-		
-	    XLOL = SOLTHA(J,N)/XYEAR
-	    EUE  = SGNTHA(J,N)/XYEAR
-	    IF (SOLTPA(J,N).GT.0.) THEN
-	      XMGNP= SGNTPA(J,N)/SOLTPA(J,N)
-	    ELSE
-	      XMGNP= 0.0
-	    ENDIF
-		
-	    XLOLP= SOLTPA(J,N)/XYEAR
-	    EUEP = SGNTPA(J,N)/XYEAR
-      
-	    IF(INDX.EQ.1)GO TO 207
-        WRITE(16,1030)J,N,XLOL,XMGN,EUE
-        *,XLOLP,XMGNP,XT
-	    GO TO 208
+	     IF(NFCST.EQ.1)GO TO 11476
+	DO 50 N = 1, NFCST
+	IF (SOLGHA(J,N).GT.0.) THEN
+	XMGN = SGNGHA(J,N)/SOLGHA(J,N)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SOLGHA(J,N)/XYEAR
+	EUE  = SGNGHA(J,N)/XYEAR
+	IF (SOLGPA(J,N).GT.0.) THEN
+	 XMGNP= SGNGPA(J,N)/SOLGPA(J,N)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SOLGPA(J,N)/XYEAR
+	EUEP = SGNGPA(J,N)/XYEAR
+      IF(INDX.EQ.1)GO TO 211
+      WRITE(16,1030)J,N,XLOL,XMGN,EUE
+     *,XLOLP,XMGNP,XG
+      GO TO 215
+ 211   CONTINUE
+      WRITE(16,2030)J,N,XLOLP,XMGNP,XG
+ 215   CONTINUE
+	IF (SOLTHA(J,N).GT.0.) THEN
+	XMGN = SGNTHA(J,N)/SOLTHA(J,N)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SOLTHA(J,N)/XYEAR
+	EUE  = SGNTHA(J,N)/XYEAR
+	IF (SOLTPA(J,N).GT.0.) THEN
+	 XMGNP= SGNTPA(J,N)/SOLTPA(J,N)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SOLTPA(J,N)/XYEAR
+	EUEP = SGNTPA(J,N)/XYEAR
+      IF(INDX.EQ.1)GO TO 207
+      WRITE(16,1030)J,N,XLOL,XMGN,EUE
+     *,XLOLP,XMGNP,XT
+	GO TO 208
  207    WRITE(16,2030)J,N,XLOLP,XMGNP,XT
- 
  208    CONTINUE
-	    IF (SOLSHA(J,N).GT.0.) THEN
-	      XMGN = SGNSHA(J,N)/SOLSHA(J,N)
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-		
-	    XLOL = SOLSHA(J,N)/XYEAR
-	    EUE  = SGNSHA(J,N)/XYEAR
-		
-	    IF (SOLSPA(J,N).GT.0.) THEN
-	      XMGNP= SGNSPA(J,N)/SOLSPA(J,N)
-	    ELSE
-	      XMGNP= 0.0
-	    ENDIF
-		
-	    XLOLP= SOLSPA(J,N)/XYEAR
-	    EUEP = SGNSPA(J,N)/XYEAR
-        IF(INDX.EQ.1)GO TO 209
-        WRITE(16,1030)J,N,XLOL,XMGN,EUE
-        *,XLOLP,XMGNP,XS
-        GO TO 210
- 209    CONTINUE
-        WRITE(16,2030)J,N,XLOLP,XMGNP,XS
- 210    CONTINUE
+	IF (SOLSHA(J,N).GT.0.) THEN
+	XMGN = SGNSHA(J,N)/SOLSHA(J,N)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SOLSHA(J,N)/XYEAR
+	EUE  = SGNSHA(J,N)/XYEAR
+	IF (SOLSPA(J,N).GT.0.) THEN
+	 XMGNP= SGNSPA(J,N)/SOLSPA(J,N)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SOLSPA(J,N)/XYEAR
+	EUEP = SGNSPA(J,N)/XYEAR
+       IF(INDX.EQ.1)GO TO 209
+      WRITE(16,1030)J,N,XLOL,XMGN,EUE
+     *,XLOLP,XMGNP,XS
+      GO TO 210
+ 209  CONTINUE
+      WRITE(16,2030)J,N,XLOLP,XMGNP,XS
+ 210  CONTINUE
   50  CONTINUE
 C ****  NEW CODE ...KCP
       WRITE(16,'(1H )')
 C ****
-11476 IF (SWLGHA(J).GT.0.0) THEN
-        XMGN = SWNGHA(J)/SWLGHA(J)
-	  ELSE
-	    XMGN = 0.0
-	  ENDIF
-	  
-	  XLOL = SWLGHA(J)/XYEAR
-	  EUE  = SWNGHA(J)/XYEAR
-	  IF (SWLGPA(J).GT.0.0) THEN
-        XMGNP= SWNGPA(J)/SWLGPA(J)
-	  ELSE
-	    XMGNP= 0.0
-	  ENDIF
-	  
-	  XLOLP= SWLGPA(J)/XYEAR
-	  EUEP = SWNGPA(J)/XYEAR
+11476   IF (SWLGHA(J).GT.0.0) THEN
+      XMGN = SWNGHA(J)/SWLGHA(J)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SWLGHA(J)/XYEAR
+	EUE  = SWNGHA(J)/XYEAR
+	IF (SWLGPA(J).GT.0.0) THEN
+      XMGNP= SWNGPA(J)/SWLGPA(J)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SWLGPA(J)/XYEAR
+	EUEP = SWNGPA(J)/XYEAR
       IF(INDX.EQ.1)GO TO 221
       WRITE(16,1040)J,XA,XLOL,XMGN,EUE
-      *,XLOLP,XMGNP,XG
-	  GO TO 225
+     *,XLOLP,XMGNP,XG
+	GO TO 225
  221  CONTINUE
       WRITE(16,2040)J,XA,XLOLP,XMGNP,XG
-	  
  225  CONTINUE
-	  IF (SWLTHA(J).GT.0.0) THEN
-        XMGN = SWNTHA(J)/SWLTHA(J)
-	  ELSE
-	    XMGN = 0.0
-	  ENDIF
-	  
-	  XLOL = SWLTHA(J)/XYEAR
-	  EUE  = SWNTHA(J)/XYEAR
-	  IF (SWLTPA(J).GT.0.0) THEN
-        XMGNP= SWNTPA(J)/SWLTPA(J)
-	  ELSE
-	    XMGNP= 0.0
-	  ENDIF
-	  
-	  XLOLP= SWLTPA(J)/XYEAR
-	  EUEP = SWNTPA(J)/XYEAR
+	IF (SWLTHA(J).GT.0.0) THEN
+      XMGN = SWNTHA(J)/SWLTHA(J)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SWLTHA(J)/XYEAR
+	EUE  = SWNTHA(J)/XYEAR
+	IF (SWLTPA(J).GT.0.0) THEN
+      XMGNP= SWNTPA(J)/SWLTPA(J)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SWLTPA(J)/XYEAR
+	EUEP = SWNTPA(J)/XYEAR
       IF(INDX.EQ.1)GO TO 241
       WRITE(16,1040)J,XA,XLOL,XMGN,EUE
-      *,XLOLP,XMGNP,XT
-      GO TO 245
- 241  CONTINUE
-      WRITE(16,2040)J,XA,XLOLP,XMGNP,XT
-	  
- 245  CONTINUE
-	  IF (SWLSHA(J).GT.0.0) THEN
-        XMGN = SWNSHA(J)/SWLSHA(J)
-	  ELSE
-	    XMGN = 0.0
-	  ENDIF
-	  
-	  XLOL = SWLSHA(J)/XYEAR
-	  SSQA(J,1)=XNEWA(J,1)/XYEAR-XLOL**2
-	  EUE  = SWNSHA(J)/XYEAR
-	  SSQA(J,2)=XNEWA(J,2)/XYEAR-EUE**2
-	  
-	  IF (SWLSPA(J).GT.0.0) THEN
-        XMGNP= SWNSPA(J)/SWLSPA(J)
-	  ELSE
-	    XMGNP= 0.0
-	  ENDIF
-	  
-	  XLOLP= SWLSPA(J)/XYEAR
-	  SSQA(J,3)=XNEWA(J,3)/XYEAR-XLOLP**2
-	  EUEP = SWNSPA(J)/XYEAR
-	  
+     *,XLOLP,XMGNP,XT
+       GO TO 245
+ 241   CONTINUE
+       WRITE(16,2040)J,XA,XLOLP,XMGNP,XT
+ 245   CONTINUE
+	IF (SWLSHA(J).GT.0.0) THEN
+      XMGN = SWNSHA(J)/SWLSHA(J)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SWLSHA(J)/XYEAR
+	SSQA(J,1)=XNEWA(J,1)/XYEAR-XLOL**2
+	EUE  = SWNSHA(J)/XYEAR
+	SSQA(J,2)=XNEWA(J,2)/XYEAR-EUE**2
+	IF (SWLSPA(J).GT.0.0) THEN
+      XMGNP= SWNSPA(J)/SWLSPA(J)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SWLSPA(J)/XYEAR
+	SSQA(J,3)=XNEWA(J,3)/XYEAR-XLOLP**2
+	EUEP = SWNSPA(J)/XYEAR
       IF(INDX.EQ.1)GO TO 231
       WRITE(16,1040)J,XA,XLOL,XMGN,EUE
-      *,XLOLP,XMGNP,XS
+     *,XLOLP,XMGNP,XS
       GO TO 235
  231  CONTINUE
       WRITE(16,2040)J,XA,XLOLP,XMGNP,XS
-	  
  235  CONTINUE
       SUSTAT(J,4)=XLOL
       SUSTAT(J,5)=XLOLP
@@ -3818,49 +3404,44 @@ C ****
 C ****  NEW CODE ...KCP
       WRITE(16,'(1H ,/)')
 C ****
- 60 CONTINUE
-   
-   
+   60 CONTINUE
 C POOL STATISTICS
       WRITE(16,1060)
  1060 FORMAT (' ',/,10X,' POOL STATISTICS',/)
-	  IF(NFCST.EQ.1)GO TO 11477
+	     IF(NFCST.EQ.1)GO TO 11477
       DO 70 N = 1, NFCST
-	    IF (SOLGHP(N).GT.0.) THEN
-	      XMGN = SGNGHP(N)/SOLGHP(N)
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-	    XLOL = SOLGHP(N)/XYEAR
-	    EUE  = SGNGHP(N)/XYEAR
-        IF (SOLGPP(N).GT.0) THEN
-          XMGNP= SGNGPP(N)/SOLGPP(N)
-        ELSE
-          XMGNP= 0.0
-        ENDIF
-        XLOLP= SOLGPP(N)/XYEAR
-        EUEP =  0.0
-	  
-        IF(INDX.EQ.1)GO TO 261
-          WRITE(16,1031) N,XLOL,XMGN,EUE
-          *,XLOLP,XMGNP,XG
-          GO TO 265
- 261    CONTINUE
-          WRITE(16,2031)N,XLOLP,XMGNP,XG
- 265    CONTINUE
- 
-	    IF (SOLTHP(N).GT.0.) THEN
-	      XMGN = SGNTHP(N)/SOLTHP(N)
-	    ELSE
-	      XMGN = 0.0
-	    ENDIF
-	    
-		XLOL = SOLTHP(N)/XYEAR
-	    EUE  = SGNTHP(N)/XYEAR
+	IF (SOLGHP(N).GT.0.) THEN
+	 XMGN = SGNGHP(N)/SOLGHP(N)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SOLGHP(N)/XYEAR
+	EUE  = SGNGHP(N)/XYEAR
+	IF (SOLGPP(N).GT.0) THEN
+	  XMGNP= SGNGPP(N)/SOLGPP(N)
+	ELSE
+	XMGNP= 0.0
+	ENDIF
+	XLOLP= SOLGPP(N)/XYEAR
+	EUEP =  0.0
+	IF(INDX.EQ.1)GO TO 261
+	WRITE(16,1031) N,XLOL,XMGN,EUE
+     *,XLOLP,XMGNP,XG
+      GO TO 265
+ 261  CONTINUE
+      WRITE(16,2031)N,XLOLP,XMGNP,XG
+ 265  CONTINUE
+	IF (SOLTHP(N).GT.0.) THEN
+	 XMGN = SGNTHP(N)/SOLTHP(N)
+	ELSE
+	XMGN = 0.0
+	ENDIF
+	XLOL = SOLTHP(N)/XYEAR
+	EUE  = SGNTHP(N)/XYEAR
 	IF (SOLTPP(N).GT.0) THEN
 	  XMGNP= SGNTPP(N)/SOLTPP(N)
 	ELSE
-	  XMGNP= 0.0
+	XMGNP= 0.0
 	ENDIF
 	XLOLP= SOLTPP(N)/XYEAR
 	EUEP =  0.0
@@ -3872,9 +3453,9 @@ C POOL STATISTICS
       WRITE(16,2031)N,XLOLP,XMGNP,XT
  255  CONTINUE
 	IF (SOLSHP(N).GT.0.) THEN
-	  XMGN = SGNSHP(N)/SOLSHP(N)
+	 XMGN = SGNSHP(N)/SOLSHP(N)
 	ELSE
-	  XMGN = 0.0
+	XMGN = 0.0
 	ENDIF
 	XLOL = SOLSHP(N)/XYEAR
 	EUE  = SGNSHP(N)/XYEAR
@@ -3893,20 +3474,18 @@ C POOL STATISTICS
       WRITE(16,2031)N,XLOLP,XMGNP,XS
  275  CONTINUE
  70   CONTINUE
- 
 11477 CONTINUE
-
 	IF (SWLGHP.GT.0.0) THEN
       XMGN = SWNGHP/SWLGHP
 	ELSE
-	  XMGN = 0.0
+	XMGN = 0.0
 	ENDIF
 	XLOL = SWLGHP/XYEAR
 	EUE  = SWNGHP/XYEAR
 	IF (SWLGPP.GT.0.0) THEN
       XMGNP= SWNGPP/SWLGPP
 	ELSE
-	  XMGNP= 0.0
+	XMGNP= 0.0
 	ENDIF
 	XLOLP= SWLGPP/XYEAR
 	EUEP = 0.0
@@ -3923,16 +3502,16 @@ C ****
 	IF (SWLTHP.GT.0.0) THEN
       XMGN = SWNTHP/SWLTHP
 	ELSE
-	  XMGN = 0.0
+	XMGN = 0.0
 	ENDIF
 	XLOL = SWLTHP/XYEAR
 	EUE  = SWNTHP/XYEAR
 	IF (SWLTPP.GT.0.0) THEN
       XMGNP= SWNTPP/SWLTPP
 	ELSE
-	  XMGNP= 0.0
+	XMGNP= 0.0
 	ENDIF
-	  XLOLP= SWLTPP/XYEAR
+	XLOLP= SWLTPP/XYEAR
 	EUEP = 0.0
       IF(INDX.EQ.1)GO TO 291
       WRITE(16,1041)XA,XLOL,XMGN,EUE
@@ -3944,7 +3523,7 @@ C ****
 	IF (SWLSHP.GT.0.0) THEN
       XMGN = SWNSHP/SWLSHP
 	ELSE
-	  XMGN = 0.0
+	XMGN = 0.0
 	ENDIF
 	XLOL = SWLSHP/XYEAR
 	SSQP(1)=XNEWP(1)/XYEAR-XLOL**2
@@ -3953,7 +3532,7 @@ C ****
 	IF (SWLSPP.GT.0.0) THEN
       XMGNP= SWNSPP/SWLSPP
 	ELSE
-	  XMGNP= 0.0
+	XMGNP= 0.0
 	ENDIF
 	XLOLP= SWLSPP/XYEAR
 	SSQP(3)=XNEWP(3)/XYEAR-XLOLP**2
@@ -4001,56 +3580,48 @@ C ****
      *33X,'CAPACITY',4X,'PCT RES',
      *5X,'MAGN',6X,'PCT SD'
      *)
-	 
       DO 101 I=1,NOAREA
-        IF(SUSTAT(I,1).GT.0.)
-       &   SUSTAT(I,3)=(SUSTAT(I,2)-SUSTAT(I,1))/SUSTAT(I,1)*100.
-	   
-        IF(INDX.EQ.1)GO TO 320
-          SSHL=0.
-          SSEU=0.
-          SSLO=0.
-          IF(SUSTAT(I,4).GT.0.)SSHL=SSQA(I,1)/SUSTAT(I,4)*100.
-          IF(SUSTAT(I,6).GT.0.)SSEU=SSQA(I,2)/SUSTAT(I,6)*100.
-          IF(SUSTAT(I,5).GT.0.)SSLO=SSQA(I,3)/SUSTAT(I,5)*100.
-		
+      IF(SUSTAT(I,1).GT.0.)
+     &   SUSTAT(I,3)=(SUSTAT(I,2)-SUSTAT(I,1))/SUSTAT(I,1)*100.
+      IF(INDX.EQ.1)GO TO 320
+      SSHL=0.
+      SSEU=0.
+      SSLO=0.
+      IF(SUSTAT(I,4).GT.0.)SSHL=SSQA(I,1)/SUSTAT(I,4)*100.
+      IF(SUSTAT(I,6).GT.0.)SSEU=SSQA(I,2)/SUSTAT(I,6)*100.
+      IF(SUSTAT(I,5).GT.0.)SSLO=SSQA(I,3)/SUSTAT(I,5)*100.
 C     WRITE(16,102)NAMA(I),(SUSTAT(I,J),J=1,4),SSQA(I,1),SUSTAT(I,6)
 C    &,SSQA(I,2),SUSTAT(I,5),SSQA(I,3)
-
-          WRITE(16,102)NAMA(I),(SUSTAT(I,J),J=1,4),SSHL,SUSTAT(I,6)
-          &,SSEU,SUSTAT(I,5),SSLO
-        GO TO 325
- 320    CONTINUE
-          SSLO=0.
-          IF(SUSTAT(I,5).GT.0.)SSLO=SSQA(I,3)/SUSTAT(I,5)*100.
-          WRITE(16,202)NAMA(I),(SUSTAT(I,J),J=1,3),SUSTAT(I,5),SSLO
- 325    CONTINUE
-     
-	    NO1=NOAREA+1
-        SUSTAT(NO1,1)=SUSTAT(NO1,1)+SUSTAT(I,1)
-        SUSTAT(NO1,2)=SUSTAT(NO1,2)+SUSTAT(I,2)
+      WRITE(16,102)NAMA(I),(SUSTAT(I,J),J=1,4),SSHL,SUSTAT(I,6)
+     &,SSEU,SUSTAT(I,5),SSLO
+      GO TO 325
+ 320  CONTINUE
+      SSLO=0.
+      IF(SUSTAT(I,5).GT.0.)SSLO=SSQA(I,3)/SUSTAT(I,5)*100.
+      WRITE(16,202)NAMA(I),(SUSTAT(I,J),J=1,3),SUSTAT(I,5),SSLO
+ 325  CONTINUE
+      NO1=NOAREA+1
+      SUSTAT(NO1,1)=SUSTAT(NO1,1)+SUSTAT(I,1)
+      SUSTAT(NO1,2)=SUSTAT(NO1,2)+SUSTAT(I,2)
  101  CONTINUE
- 
       IF(SUSTAT(I,1).GT.0.)
      &   SUSTAT(NO1,3)=(SUSTAT(I,2)-SUSTAT(I,1))/SUSTAT(I,1)*100.
-	 
       IF(INDX.EQ.1)GO TO 330
-        SSHL=0.
-        SSEU=0.
-        SSLO=0.
-        IF(SUSTAT(NO1,4).GT.0.)SSHL=SSQP(1)/SUSTAT(NO1,4)*100.
-        IF(SUSTAT(NO1,6).GT.0.)SSEU=SSQP(2)/SUSTAT(NO1,6)*100.
-        IF(SUSTAT(NO1,5).GT.0.)SSLO=SSQP(3)/SUSTAT(NO1,5)*100.
-        WRITE(16,103)FH,SH,(SUSTAT(NO1,J),J=1,4),SSHL,SUSTAT(NO1,
-       &6),SSEU,SUSTAT(NO1,5),SSLO
-        GO TO 335
+      SSHL=0.
+      SSEU=0.
+      SSLO=0.
+      IF(SUSTAT(NO1,4).GT.0.)SSHL=SSQP(1)/SUSTAT(NO1,4)*100.
+      IF(SUSTAT(NO1,6).GT.0.)SSEU=SSQP(2)/SUSTAT(NO1,6)*100.
+      IF(SUSTAT(NO1,5).GT.0.)SSLO=SSQP(3)/SUSTAT(NO1,5)*100.
+      WRITE(16,103)FH,SH,(SUSTAT(NO1,J),J=1,4),SSHL,SUSTAT(NO1,
+     &6),SSEU,SUSTAT(NO1,5),SSLO
+      GO TO 335
  330  CONTINUE
-        SSLO=0.
-        IF(SUSTAT(NO1,5).GT.0.)SSLO=SSQP(3)/SUSTAT(NO1,5)*100.
-        WRITE(16,203)FH,SH,(SUSTAT(NO1,J),J=1,3)
-        &,SUSTAT(NO1,5),SSLO
+      SSLO=0.
+      IF(SUSTAT(NO1,5).GT.0.)SSLO=SSQP(3)/SUSTAT(NO1,5)*100.
+      WRITE(16,203)FH,SH,(SUSTAT(NO1,J),J=1,3)
+     &,SUSTAT(NO1,5),SSLO
  335  CONTINUE
- 
  102  FORMAT(10X,A4,5X,F7.0,5X,F8.0,5X,F5.1,5X,F7.3,4X,F7.3
      &,4X,F8.0,3X,F8.0,3X,F7.3,3X,F7.3)
  202  FORMAT(10X,A4,5X,F7.0,5X,F8.0,5X,F5.1,5X
@@ -4059,7 +3630,6 @@ C    &,SSQA(I,2),SUSTAT(I,5),SSQA(I,3)
      &,4X,F8.0,3X,F8.0,3X,F7.3,3X,F7.3)
  203  FORMAT(1H ,/,10X,A4,A1,4X,F7.0,5X,F8.0,5X,F5.1,5X
      &,F7.3,3X,F7.3)
-	 
 C     WRITE(16,113)
 C     WRITE(16,'(1H ,///)')
 C     ITAB=ITAB+1
@@ -4075,35 +3645,78 @@ C104  CONTINUE
 C     WRITE(16,1044)
 C1044 FORMAT(5X,'POOL STATS',/)
 C     WRITE(16,1046)(SSQP(J),J=1,3)
-
       DO 100 J=1,22
-        DO 100 I = 1, NOAREA
-  100     SUMHL(I) = SUMHL(I) + HLOLE(I,J)
+      DO 100 I = 1, NOAREA
+  100 SUMHL(I) = SUMHL(I) + HLOLE(I,J)
       DO 110 J = 1, 22
-        DO 110 I = 1, NOAREA
-  110     SUMDP(I) = SUMDP(I) + DPLOLE(I,J)
+      DO 110 I = 1, NOAREA
+  110 SUMDP(I) = SUMDP(I) + DPLOLE(I,J)
       DO 120 J = 1,22
-        DO 120 I = 1, NOAREA
-  120     SUMEUE(I) = SUMEUE(I) + EUES(I,J)
+      DO 120 I = 1, NOAREA
+  120 SUMEUE(I) = SUMEUE(I) + EUES(I,J)
       DO 130 J = 1, 22
-        DO 130 I = 1, NOAREA
-  130     PHL(I,J) = HLOLE(I,J)/SUMHL(I)
+      DO 130 I = 1, NOAREA
+  130 PHL(I,J) = HLOLE(I,J)/SUMHL(I)
       DO 140 J = 1, 22
-        DO 140 I = 1, NOAREA
-  140     PDP(I,J) = DPLOLE(I,J)/SUMHL(I)
+      DO 140 I = 1, NOAREA
+  140 PDP(I,J) = DPLOLE(I,J)/SUMHL(I)
       DO 150 J = 1, 22
-        DO 150 I = 1, NOAREA
-  150     PEUE(I,J) = EUES(I,J)/SUMEUE(I)
+      DO 150 I = 1, NOAREA
+  150 PEUE(I,J) = EUES(I,J)/SUMEUE(I)
+
+C***************************************************************
+C OLD REPORT CODE
+C****************************************************************
+C     DO 200 I = 1, NOAREA
+C     WRITE(16,1005)
+C        ITAB=ITAB+1
+C        WRITE(16,1006)ITAB
+C        WRITE(16,1110) I
+C1110    FORMAT(' ',/,'                PROB DIST FOR AREA',I3)
+C        WRITE(16,1120)
+C1120    FORMAT(' ',/,'              HOURLY LOLES PER YEAR')
+C        WRITE(16,1130)
+C1130    FORMAT(' ',/,5X,'NUMBER',5X,'OBSERVATIONS',5X,'PROBABILITY')
+C        DO 160 J = 1,  22
+C        K = J - 1
+C 160    WRITE(16,1140) K, HLOLE(I,J),PHL(I,J)
+C1140    FORMAT(' ',2X,I5, 8X,F7.0,13X,F5.3)
+C     WRITE(16,1005)
+C        ITAB=ITAB+1
+C        WRITE(16,1006)ITAB
+C        WRITE(16,1110) I
+C        WRITE(16,1150)
+C1150    FORMAT(' ',///,'             DAILY PEAK LOLES PER YEAR')
+C        WRITE(16,1130)
+C        DO 170 J = 1, 22
+C        K = J - 1
+C 170    WRITE(16,1140) K, DPLOLE(I,J),PDP(I,J)
+C     WRITE(16,1005)
+C        ITAB=ITAB+1
+C        WRITE(16,1006)ITAB
+C        WRITE(16,1110) I
+C        WRITE(16,1160)
+C1160    FORMAT(' ',///,'                ANNUAL UNSERVED ENERGY (MWH)')
+C        WRITE(16,1170)
+C1170    FORMAT(' ',/,5X,'LIMIT',5X,'OBSERVATIONS',5X,'PROBABILITY')
+C        DO 180 J = 1, 22
+C        LIMIT = (J-1)*LSTEP
+C 180    WRITE(16,1140) LIMIT,EUES(I,J),PEUE(I,J)
+C 200 CONTINUE
+C***************************************************************
+C OLD REPORT CODE
+C****************************************************************
+
 
       DO 200 I=1,NOAREA
-	    ITAB=ITAB+1
-	    WRITE(16,9975)ITAB,I
-	    DO 160 J=1,22
-	      K=J-1
-	      LIMIT=K*LSTEP
-	      WRITE(16,9974)K,DPLOLE(I,J),PDP(I,J),HLOLE(I,J),PHL(I,J),
+	ITAB=ITAB+1
+	WRITE(16,9975)ITAB,I
+	DO 160 J=1,22
+	  K=J-1
+	  LIMIT=K*LSTEP
+	  WRITE(16,9974)K,DPLOLE(I,J),PDP(I,J),HLOLE(I,J),PHL(I,J),
      +                  LIMIT,EUES(I,J),PEUE(I,J)
- 160    CONTINUE
+ 160  CONTINUE
  200  CONTINUE
 
  9975 FORMAT(1H1,T58,'TABLE',I5,//,1H ,T43,'PROBABILITY DISTRIBUTIONS ',
@@ -4118,11 +3731,77 @@ C     WRITE(16,1046)(SSQP(J),J=1,3)
 C     STOP
       END
 
+C *************************************************
+C ORIGINAL CVCHK *************************************************
+C     SUBROUTINE CVCHK(SUM,IYEAR,RFLAG)
+C      INCLUDE 'NARPERC.txt'
+C  MOVED DATA SSQ,XLAST/2*0.0/ INITIALIZATION TO FRONT OF MAIN PROGRAM
+C     DATA DIFF/0./
+C
+C     RFLAG = 0.0
+C      WRITE(*,1) SUM
+C    1 FORMAT(' ',' INE CVCHK, SUM =',F9.1)
+C      WRITE(*,2) XLAST
+C    2 FORMAT(' ',' INE CVCHK, XLAST =',F9.1)
+C     IF (CLOCK .GE. FINISH) THEN
+C       RFLAG = 1.0
+C        RETURN
+C     ENDIF
+C
+C     DIFF = SUM - XLAST
+C     XLAST = SUM
+C     SSQ = SSQ + DIFF ** 2
+C     AYEAR = FLOAT(IYEAR)
+C
+C
+C     IF (IYEAR .LT. 5) THEN
+C       RETURN
+C     END IF
+C
+C     XMEAN = SUM / AYEAR
+C     WRITE(*,1000) IYEAR,SUM,DIFF,XMEAN
+C     IF (MOD(IYEAR,10).EQ.0) WRITE(*,1000) IYEAR,SUM,DIFF,XMEAN
+C1000 FORMAT(' TESTING FOR CONVERGENCE; ',I5,' YEARS, SUM = ',F12.4,
+C    @/,' NEW = ',F9.1,', XMEAN =',F8.3)
+C      WRITE(*,1002)(LSFLG(J),J=1,NOAREA)
+C1002  FORMAT(2X,15(I4,1X))
+C     IF (XMEAN .EQ. 0.0) THEN
+C       RETURN
+C     ENDIF
+C     IF (CVTEST.EQ.0.0) THEN
+C         XX = 0.025*XMEAN
+C     ELSE
+C         XX = CVTEST*XMEAN
+C     ENDIF
+C
+C       VAR = (SSQ/AYEAR) - (XMEAN ** 2)
+C       STD = VAR ** 0.5
+C
+C     STDERR = STD/(AYEAR ** 0.5)
+C     IF (STDERR .LT. 0.0) RETURN
+C     IF (STDERR .LT. XX) THEN
+C       RFLAG = 1.0
+C       WRITE(*,1122) CLOCK, STDERR, XX
+C1122   FORMAT('**************** SIMULATION CONVERGED ****************',
+C    @  /,'    CLOCK = ',F11.1,' STD = ',F5.2,' TEST = ',F5.2)
+C     ENDIF
+C
+C      WRITE(*,1010) STDERR,XX
+C     IF (MOD(IYEAR,NOTIFY).EQ.0) WRITE(*,1010) STDERR,XX,RFLAG
+C1010 FORMAT(' ',' STD ERR =',F9.3,' CONV THRSH = ',F9.3)
+C
+C9999 RETURN     THE 9999 IS NEVER USED ... GENE P. 1/26/89
+C     RETURN
+C     END
+C ORIGINAL CVCHK *****(END)***************************************
+C *************************************************
+
+
 
 
       SUBROUTINE CVCHK(SUM,IYEAR,RFLAG)
       INCLUDE 'NARPERC.txt'
-C     MOVED DATA SSQ,XLAST/2*0.0/ INITIALIZATION TO FRONT OF MAIN PROGRAM
+C  MOVED DATA SSQ,XLAST/2*0.0/ INITIALIZATION TO FRONT OF MAIN PROGRAM
       DATA DIFF/0./
 
       RFLAG = 0.0
@@ -4131,8 +3810,8 @@ C    1 FORMAT(' ',' INE CVCHK, SUM =',F9.1)
 C      WRITE(*,2) XLAST
 C    2 FORMAT(' ',' INE CVCHK, XLAST =',F9.1)
       IF (CLOCK .GE. FINISH) THEN
-	    RFLAG = 1.0
-C       RETURN
+	RFLAG = 1.0
+C        RETURN
       ENDIF
 
       DIFF = SUM - XLAST
@@ -4142,46 +3821,40 @@ C       RETURN
 
 
       IF (IYEAR .LT. 5) THEN
-	    RETURN
+	RETURN
       END IF
 
       XMEAN = SUM / AYEAR
       IF (CVTEST.EQ.0.0) THEN
-	    XX = 0.025*XMEAN
+	  XX = 0.025*XMEAN
       ELSE
-	    XX = CVTEST*XMEAN
+	  XX = CVTEST*XMEAN
       ENDIF
 
-	  VAR = (SSQ/AYEAR) - (XMEAN ** 2)
-	  STD = VAR ** 0.5
+	VAR = (SSQ/AYEAR) - (XMEAN ** 2)
+	STD = VAR ** 0.5
 
       STDERR = STD/(AYEAR ** 0.5)
       XKCPXX = 0.
-	  
       IF (XX.NE.0.0) XKCPXX = STDERR/XX
-	  
       WRITE(*,1000) IYEAR,SUM,DIFF,XMEAN,XKCPXX
  1000 FORMAT(' ',I6,' REPLICATION; SUM=',F7.1,'  NEW=',F5.1,
      @'  MEAN=',F6.3,'  CONVERGENCE=',F7.3)
-	 
       IF (XMEAN .EQ. 0.0) THEN
-	    RETURN
+	RETURN
       ENDIF
-	  
       IF (STDERR .LT. 0.0) RETURN
-	  
       IF (STDERR .LT. XX) THEN
-	    RFLAG = 1.0
-	    WRITE(*,1122) CLOCK, STDERR, XX
+	RFLAG = 1.0
+	WRITE(*,1122) CLOCK, STDERR, XX
  1122   FORMAT('**************** SIMULATION CONVERGED ****************',
      @  /,'    CLOCK = ',F11.1,' STD = ',F5.2,' TEST = ',F5.2)
       ENDIF
-	  
+
+
 C9999 RETURN     THE 9999 IS NEVER USED ... GENE P. 1/26/89
       RETURN
       END
-
-
 
       SUBROUTINE DATAF1(JU)
       INCLUDE 'NARPERC.txt'
@@ -4210,25 +3883,16 @@ C      JU=6     NOTE THAT UNIT=1 IS SCREEN... GENE P. 1/27/89
       IF(IABORT.NE.0)GO TO 100
       CALL SRDD(JU1,JU2,JU3,JU4)
       IF(IABORT.NE.0)GO TO 100
-
       REWIND (JU1)
       CALL PIND(JU1,JU)
-
       REWIND (JU1)
       CALL INPUT(JU1)
-
       IF(IABORT.NE.0)GO TO 100
-
       REWIND (JU1)
       CALL SEEDER
-
  100  CONTINUE
       RETURN
       END
-
-
-
-
 C
 C THIS SUBROUTINE READS ZZTC CARDS
 C
@@ -4552,9 +4216,6 @@ C570  CONTINUE
  700  IABORT=IABORT+1
       RETURN
       END
-	  
-	  
-	  
 C
 C SUBROUTINE TO CREATE ZZLD
 C
@@ -4796,8 +4457,8 @@ C TESTING FOR FORBIDDEN PERIOD
       CALL ARANGB(SN,SNBI,IT)
       K=0
       DO 141 I=1,IT
-        IF(SNBI(I).EQ.0)GO TO 141
-        K=K+1
+      IF(SNBI(I).EQ.0)GO TO 141
+      K=K+1
  141  CONTINUE
       WRITE(JU1,260)K
  260  FORMAT(I2)
@@ -4821,8 +4482,6 @@ C TESTING FOR FORBIDDEN PERIOD
  460  FORMAT(F8.0,1X,F5.2,1X,4(I2,1X),F8.0)
       RETURN
       END
-
-
 C
 C SUBROUTINE TO CREATE ZZUD
 C
@@ -4851,17 +4510,13 @@ C UPDATE LINE NUMBER IN INPUTB- C. SINGH DEC 1993
       ILINE=ILINE+1
       READ(STRING,110)(TITL(J),J=1,20)
       NI=0
-
       DO 115 I=1,20
       IF(TITL(I).NE.BLANK)NI=1
  115  CONTINUE
-
       IF(NI.EQ.0)GO TO 120
       READ(STRING,20)IC
-
       IF(IC.NE.CARD)GO TO 130
       BACKSPACE JU2
-
 C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
       READ(STRING,21)IC
       IF(IC.EQ.CBFC)GO TO 70
@@ -4870,21 +4525,17 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-
  70   CONTINUE
       ILINE=ILINE-1
       GO TO 140
-
  130  II=II+1
-
       IF(II.LE.SNRIL)GO TO 505
       WRITE(*,506)ILINE
  506  FORMAT(15X,'NUMBER OF ENTRIES EXCEEDS SNRI LIMIT'
      *,/,15X,'PROGRAM ABORTED',/,15X,
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-      IABORT=1
-      RETURN
-
+       IABORT=1
+       RETURN
  505  CONTINUE
 CPC 96
       WRITE(18,FMT='(A80)')STRING
@@ -4902,7 +4553,6 @@ CPC 96
      *,/,15X,'WARNING OCCURED IN LINE',I4,/)
  510  CONTINUE
       GO TO 120
-
  121  CONTINUE
       WRITE(*,122)ILINE
  122  FORMAT(15X,'NO OF ENTRIES FEWER THAN REQUIRED',/,
@@ -4910,7 +4560,6 @@ CPC 96
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
       IABORT=1
       RETURN
-
  140  CONTINUE
       III=0
       IT=II
@@ -4990,27 +4639,24 @@ CPC 96
       IT=II
       II=ITEMP
       DO 441 I=1,IT
-		SNBI(I)=(SNRI(I)+.000001)*1000
-		SN(I)=I
-		SNDI(I)=(SNXI(I)+.000001)*1000
+      SNBI(I)=(SNRI(I)+.000001)*1000
+      SN(I)=I
+      SNDI(I)=(SNXI(I)+.000001)*1000
  441  CONTINUE
-
       IF(III.EQ.0)GO TO 401
-		DO 400 I=1,III
-			DO 400 J=1,II
-				IF(SNBI(J).EQ.SNDI(I))SNBI(J)=0
- 400  		CONTINUE
+      DO 400 I=1,III
+      DO 400 J=1,II
+      IF(SNBI(J).EQ.SNDI(I))SNBI(J)=0
+ 400  CONTINUE
  401  CONTINUE
-
       IF(II.EQ.IT)GO TO 446
-		DO 442 I=1,II
-			IIT=II+1
-			DO 443 J=IIT,IT
-				IF(SNBI(I).EQ.SNBI(J))SNBI(I)=0
- 443  		CONTINUE
- 442  	CONTINUE
+      DO 442 I=1,II
+      IIT=II+1
+      DO 443 J=IIT,IT
+      IF(SNBI(I).EQ.SNBI(J))SNBI(I)=0
+ 443  CONTINUE
+ 442  CONTINUE
  446  CONTINUE
-
       ILINET=ILINE
       JLINET=JLINE
       DO 470 II=1,IT
@@ -5033,7 +4679,6 @@ C TESTING FOR DATA FEASIBILITY-C. SINGH DEC 1993
      *'ERROR OCCURED INPUTB  IN LINE',I4,/)
       IABORT=1
  530  CONTINUE
-
 C TEST FOR DFOR FOR AND DER
       IF((HRLOAD(5,II).LE.1).AND.(HRLOAD(5,II).GE.0))GO TO 535
       WRITE(*,536)ILINE
@@ -5055,7 +4700,6 @@ C TEST FOR DFOR FOR AND DER
      *'PROGRAM ABORTED',/,15X,
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
       IABORT=1
-
 C TESTING FOR MAINTENANCE DATA
  545  CONTINUE
        GO TO 470
@@ -5077,7 +4721,6 @@ C TESTING FOR MAINTENANCE DATA
      *'ERROR OCCURED INPUTC  IN LINE',I4,/)
       IABORT=1
  730  CONTINUE
-
 C TEST FOR DFOR FOR AND DER
       IF((HRLOAD(5,II).LE.1).AND.(HRLOAD(5,II).GE.0))GO TO 735
       WRITE(*,736)ILINE
@@ -5112,135 +4755,123 @@ C TEST FOR DFOR FOR AND DER
       WRITE(JU1,260)K
       NUNITS=K
  260  FORMAT(I3)
- 
       LL=0
       DO 150 I=1,IT
-        IF(SNBI(I).EQ.0)GO TO 150
-        LL=LL+1
-        L=SN(I)
-        WRITE(JU4,465)NAT(L),NAR(L)
+      IF(SNBI(I).EQ.0)GO TO 150
+      LL=LL+1
+      L=SN(I)
+      WRITE(JU4,465)NAT(L),NAR(L)
 C      WRITE(JU1,465)NAT(L),NAR(L)
-        BACKSPACE JU4
-        READ(JU4,466)NAMU(LL),NUMP(LL),NA
-        BACKSPACE JU4
-466     FORMAT(A4,A2,2X,A4)
-465     FORMAT(A8,A4)
-
-        IF(LL.NE.1)GO TO 145
-          NMP(LL)=1
-          NP=1
-          IPTD(NP,1)=ID(L,1)
-          IPTD(NP,6)=LL
-145     CONTINUE
-        
-		LM=LL-1
-        IF(LM.EQ.0)GO TO 147
-          DO 146 K4=1,LM
-            IF(NAMU(LL).EQ.NAMU(K4))NMP(LL)=NMP(K4)
-            IF(NAMU(LL).EQ.NAMU(K4))GO TO 147
-146       CONTINUE
-          NP=NP+1
-          NMP(LL)=NP
-          IPTD(NP,1)=ID(L,1)
-          IPTD(NP,6)=LL
-147     CONTINUE
-        
-		NUMA=0
-        DO 148 K4=1,NOAREA
-          IF(NA.EQ.NAMA(K4))NUMA=K4
-148     CONTINUE
-        WRITE(JU1,460)LL,NMP(LL),NUMA,(HRLOAD(J,L),J=1,7),(ID(L,J),J=2,5)
-       *,ID(L,1)
-        ITAG=NUMA
-        NPLANT=NMP(LL)
-
+      BACKSPACE JU4
+      READ(JU4,466)NAMU(LL),NUMP(LL),NA
+      BACKSPACE JU4
+466   FORMAT(A4,A2,2X,A4)
+465   FORMAT(A8,A4)
+      IF(LL.NE.1)GO TO 145
+      NMP(LL)=1
+      NP=1
+      IPTD(NP,1)=ID(L,1)
+      IPTD(NP,6)=LL
+145   CONTINUE
+      LM=LL-1
+      IF(LM.EQ.0)GO TO 147
+      DO 146 K4=1,LM
+      IF(NAMU(LL).EQ.NAMU(K4))NMP(LL)=NMP(K4)
+      IF(NAMU(LL).EQ.NAMU(K4))GO TO 147
+146   CONTINUE
+      NP=NP+1
+      NMP(LL)=NP
+      IPTD(NP,1)=ID(L,1)
+      IPTD(NP,6)=LL
+147   CONTINUE
+      NUMA=0
+      DO 148 K4=1,NOAREA
+      IF(NA.EQ.NAMA(K4))NUMA=K4
+148   CONTINUE
+      WRITE(JU1,460)LL,NMP(LL),NUMA,(HRLOAD(J,L),J=1,7),(ID(L,J),J=2,5)
+     *,ID(L,1)
+      ITAG=NUMA
+      NPLANT=NMP(LL)
 C TESTING FOR MAINTENANCE DATA
-        IF(IPTD(NPLANT,1).EQ.ID(L,1))GO TO 550
-        IF(ID(L,7).EQ.2)GO TO 547
-        WRITE(*,546)ID(L,8)
-        GO TO 550
-		
- 547    WRITE(*,746)ID(L,8)
- 546    FORMAT(15X,'MODE OF PLANNED OUTAGE(A/P) MIXED WITHIN A PLANT'
-       *,/,15X,'PROGRAM ABORTED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
- 550    CONTINUE
-        
-		IF(NUMA.GE.1)GO TO 555
-        IF(ID(L,7).EQ.2)GO TO 557
-        WRITE(*,556)ID(L,8)
-        GO TO 151
- 557    WRITE(*,756)ID(L,8)
- 556    FORMAT(15X,'AREA OF LOCATION NOT BEING VALID',/,15X,
-       *'MAINTENANCE DATA CAN NOT BE VERIFIED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
- 656    FORMAT(15X,'AREA OF LOCATION NOT BEING VALID',/,15X,
-       *'MAINTENANCE DATA CAN NOT BE VERIFIED',/,15X,
-       *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
-        GO TO 151
- 555    CONTINUE
-        
-		DWIN1=IWINDO(ITAG,2)-IWINDO(ITAG,1)
-		DWIN2=IWINDO(ITAG,4)-IWINDO(ITAG,3)
-		IPTD(NPLANT,4)=DWIN1
-		IPTD(NPLANT,5)=DWIN2
-      
-	    IF(ID(II,3).EQ.0)GO TO 560
-        IF(ID(II,1).EQ.0)GO TO 560
-        IF(ID(II,2).GE.IWINDO(ITAG,1))GO TO 560
-        IF(ID(L,7).EQ.2) GO TO 562
-        WRITE(*,561)ID(L,8)
-        IABORT=1
-        GO TO 560
- 562    WRITE(*,761)ID(L,8)
- 561    FORMAT(15X,'B1 EARLIER THAN BEG OF FIRST OUTAGE WINDOW',
-       */,15X,'PROGRAM ABORTED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-        IABORT=1
- 560    CONTINUE
-      
-	    IF(ID(II,3).LT.DWIN1)GO TO 570
-        IF(ID(L,7).EQ.2)GO TO 572
-        IABORT=1
-        WRITE(*,571)ID(L,8)
-        GO TO 570
- 572    WRITE(*,771)ID(L,8)
- 571    FORMAT(15X,'D1 GREATER THAN FIRST OUTAGE WINDOW',
-       */,15X,'PROGRAM ABORTED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-        IABORT=1
- 570    CONTINUE
-        IF(ID(II,5).EQ.0)GO TO 580
-        IF(ID(II,1).EQ.0)GO TO 580
-        IF(ID(II,4).GE.IWINDO(ITAG,3))GO TO 580
-        IF(ID(L,7).EQ.2)GO TO 582
-        IABORT=1
-        WRITE(*,581)ID(L,8)
-        GO TO 580
- 582    CONTINUE
-        WRITE(*,781)ID(L,8)
- 581    FORMAT(15X,'B2 EARLIER THAN BEG OF SECOND OUTAGE WINDOW',
-       */,15X,'PROGRAM ABORTED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-        IABORT=1
- 580    CONTINUE
-        IF(ID(II,5).LT.DWIN2)GO TO 590
-        IF(ID(L,7).EQ.2)GO TO 592
-        IABORT=1
-        WRITE(*,591)ID(L,8)
-        GO TO 590
- 592    WRITE(*,791)ID(L,8)
- 591    FORMAT(15X,'D2 GREATER THAN SECOND OUTAGE WINDOW',
-       */,15X,'PROGRAM ABORTED',/,15X,
-       *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-        IABORT=1
- 590    CONTINUE
-        IPTD(NPLANT,2)=IPTD(NPLANT,2)+ID(L,3)
-        IPTD(NPLANT,3)=IPTD(NPLANT,3)+ID(L,5)
- 151    CONTINUE
- 
+      IF(IPTD(NPLANT,1).EQ.ID(L,1))GO TO 550
+      IF(ID(L,7).EQ.2)GO TO 547
+      WRITE(*,546)ID(L,8)
+      GO TO 550
+ 547  WRITE(*,746)ID(L,8)
+ 546  FORMAT(15X,'MODE OF PLANNED OUTAGE(A/P) MIXED WITHIN A PLANT'
+     *,/,15X,'PROGRAM ABORTED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+ 550  CONTINUE
+      IF(NUMA.GE.1)GO TO 555
+      IF(ID(L,7).EQ.2)GO TO 557
+      WRITE(*,556)ID(L,8)
+      GO TO 151
+ 557  WRITE(*,756)ID(L,8)
+ 556  FORMAT(15X,'AREA OF LOCATION NOT BEING VALID',/,15X,
+     *'MAINTENANCE DATA CAN NOT BE VERIFIED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+ 656  FORMAT(15X,'AREA OF LOCATION NOT BEING VALID',/,15X,
+     *'MAINTENANCE DATA CAN NOT BE VERIFIED',/,15X,
+     *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
+      GO TO 151
+ 555  CONTINUE
+      DWIN1=IWINDO(ITAG,2)-IWINDO(ITAG,1)
+      DWIN2=IWINDO(ITAG,4)-IWINDO(ITAG,3)
+      IPTD(NPLANT,4)=DWIN1
+      IPTD(NPLANT,5)=DWIN2
+      IF(ID(II,3).EQ.0)GO TO 560
+      IF(ID(II,1).EQ.0)GO TO 560
+      IF(ID(II,2).GE.IWINDO(ITAG,1))GO TO 560
+      IF(ID(L,7).EQ.2) GO TO 562
+      WRITE(*,561)ID(L,8)
+      IABORT=1
+      GO TO 560
+ 562  WRITE(*,761)ID(L,8)
+ 561  FORMAT(15X,'B1 EARLIER THAN BEG OF FIRST OUTAGE WINDOW',
+     */,15X,'PROGRAM ABORTED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+      IABORT=1
+ 560  CONTINUE
+      IF(ID(II,3).LT.DWIN1)GO TO 570
+      IF(ID(L,7).EQ.2)GO TO 572
+      IABORT=1
+      WRITE(*,571)ID(L,8)
+      GO TO 570
+ 572  WRITE(*,771)ID(L,8)
+ 571  FORMAT(15X,'D1 GREATER THAN FIRST OUTAGE WINDOW',
+     */,15X,'PROGRAM ABORTED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+      IABORT=1
+ 570  CONTINUE
+      IF(ID(II,5).EQ.0)GO TO 580
+      IF(ID(II,1).EQ.0)GO TO 580
+      IF(ID(II,4).GE.IWINDO(ITAG,3))GO TO 580
+      IF(ID(L,7).EQ.2)GO TO 582
+      IABORT=1
+      WRITE(*,581)ID(L,8)
+      GO TO 580
+ 582  CONTINUE
+      WRITE(*,781)ID(L,8)
+ 581  FORMAT(15X,'B2 EARLIER THAN BEG OF SECOND OUTAGE WINDOW',
+     */,15X,'PROGRAM ABORTED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+      IABORT=1
+ 580  CONTINUE
+      IF(ID(II,5).LT.DWIN2)GO TO 590
+      IF(ID(L,7).EQ.2)GO TO 592
+      IABORT=1
+      WRITE(*,591)ID(L,8)
+      GO TO 590
+ 592  WRITE(*,791)ID(L,8)
+ 591  FORMAT(15X,'D2 GREATER THAN SECOND OUTAGE WINDOW',
+     */,15X,'PROGRAM ABORTED',/,15X,
+     *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
+      IABORT=1
+ 590  CONTINUE
+      IPTD(NPLANT,2)=IPTD(NPLANT,2)+ID(L,3)
+      IPTD(NPLANT,3)=IPTD(NPLANT,3)+ID(L,5)
+ 151  CONTINUE
  150  CONTINUE
- 
       DO 795 I=1,NP
       IF(IPTD(I,1).EQ.1)GO TO 795
       IF(IPTD(I,2).LT.IPTD(I,4))GO TO 796
@@ -5280,9 +4911,6 @@ C TESTING FOR MAINTENANCE DATA
      *X),I1)
       RETURN
       END
-
-
-
 C
 C SUBROUTINE TO CREATE ZZFC
 C
@@ -5598,8 +5226,6 @@ C TESTING FOR DATA FEASIBILITY-C. SINGH DEC 1993
  151  CONTINUE
       RETURN
       END
-	  
-	  
 C
 C SUBROUTINE TO CREATE ZZOD
 C
@@ -5621,7 +5247,6 @@ C UPDATE LINE NUMBER IN INPUTB- C. SINGH DEC 1993
       NI=0
       DO 115 I=1,20
       IF(TITL(I).NE.BLANK)NI=1
-
  115  CONTINUE
       IF(NI.EQ.0)GO TO 120
       READ(STRING,20)IC
@@ -5635,7 +5260,6 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-
  70   CONTINUE
       ILINE=ILINE-1
       GO TO 140
@@ -5647,7 +5271,6 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
        IABORT=1
        RETURN
-
  505  CONTINUE
 CPC 96
 CPC 96
@@ -5657,7 +5280,6 @@ CPC 96
       BACKSPACE 18
       LNCOUNT(II,1)=ILINE
       GO TO 120
-
  121  CONTINUE
       WRITE(*,122)ILINE
  122  FORMAT(15X,'NO OF PERCENTAGES FEWER THAN NUMBER OF AREAS',/,15X
@@ -5665,13 +5287,11 @@ CPC 96
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
        IABORT=1
       RETURN
-
  140  CONTINUE
       III=0
       IT=II
       DO 200 I=1,N
  200  READ(JU3,110)(TITL(J),J=1,20)
-
 C UPDATE LINE NUMBER IN INPUTC-C. SINGH DEC 1993
       JLINE=JLINE+N
       I1=0
@@ -5680,10 +5300,8 @@ C UPDATE LINE NUMBER IN INPUTC-C. SINGH DEC 1993
       JLINE=JLINE+1
       READ(STRING,110)(TITL(J),J=1,20)
       NI=0
-
       DO 215 I=1,20
-		IF(TITL(I).NE.BLANK)NI=1
-
+      IF(TITL(I).NE.BLANK)NI=1
  215  CONTINUE
  20   FORMAT(A2)
  21   FORMAT(A4)
@@ -5699,7 +5317,6 @@ C UPDATE LINE NUMBER IN INPUTC
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-
  80   CONTINUE
       JLINE=JLINE-1
       GO TO 240
@@ -5719,7 +5336,6 @@ CPC 96
      *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
        IABORT=1
        RETURN
-
  705  CONTINUE
 CPC 96
       WRITE(18,FMT='(A80)')STRING
@@ -5735,7 +5351,6 @@ CPC 96
      *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
        IABORT=1
       RETURN
-
  270  CONTINUE
       III=III+1
 CPC 96
@@ -5773,76 +5388,66 @@ CPC 96
       IF(IT.EQ.0)GO TO 447
       ILINET=ILINE
       JLINET=JLINE
-
       DO 470 II=1,IT
-		IF(SNBI(II).EQ.0)GO TO 470
-		IF(II.GT.ITEMP)GO TO 475
-		ILINE=LNCOUNT(II,1)
-		WRITE(JU4,465)NAT(II)
-		BACKSPACE JU4
-		READ(JU4,466)NA1,NA2
-		BACKSPACE JU4
-		ITAG=0
-		DO 510 K4=1,NUNITS
-			IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))ITAG=K4
-
- 510  	CONTINUE
-		IF(ITAG.GE.1)GO TO 520
-		WRITE(*,521)ILINE
- 521  	FORMAT(15X,'JOINTLY OWNED UNIT DOES NOT EXIST IN ZZUD DATA',
+      IF(SNBI(II).EQ.0)GO TO 470
+      IF(II.GT.ITEMP)GO TO 475
+      ILINE=LNCOUNT(II,1)
+      WRITE(JU4,465)NAT(II)
+      BACKSPACE JU4
+      READ(JU4,466)NA1,NA2
+      BACKSPACE JU4
+      ITAG=0
+      DO 510 K4=1,NUNITS
+      IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))ITAG=K4
+ 510  CONTINUE
+      IF(ITAG.GE.1)GO TO 520
+      WRITE(*,521)ILINE
+ 521  FORMAT(15X,'JOINTLY OWNED UNIT DOES NOT EXIST IN ZZUD DATA',
      */,15X,'PROGRAM ABORTED',
      */,15X,'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-		IABORT=1
-
- 520  	CONTINUE
-		TOT=0.
-		DO 530 J=1,NOAREA
-			TOT=HRLOAD(J,II)+TOT
-
- 530  	CONTINUE
-		IF(TOT.EQ.100.)GO TO 535
-		WRITE(*,536)ILINE
- 536  	FORMAT(15X,'OWNERSHIPS DONOT SUM TO 100 PERCENT',/,
+      IABORT=1
+ 520  CONTINUE
+      TOT=0.
+      DO 530 J=1,NOAREA
+      TOT=HRLOAD(J,II)+TOT
+ 530  CONTINUE
+      IF(TOT.EQ.100.)GO TO 535
+      WRITE(*,536)ILINE
+ 536  FORMAT(15X,'OWNERSHIPS DONOT SUM TO 100 PERCENT',/,
      *15X,'PROGRAM ABORTED',/,15X,
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
-		IABORT=1
- 535  	CONTINUE
-		GO TO 470
-
- 475  	CONTINUE
-		JLINE=LNCOUNT(II,1)
-		WRITE(JU4,465)NAT(II)
-		BACKSPACE JU4
-		READ(JU4,466)NA1,NA2
-		BACKSPACE JU4
-		ITAG=0
-		DO 710 K4=1,NUNITS
-			IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))ITAG=K4
-
- 710  	CONTINUE
-		IF(ITAG.GE.1)GO TO 720
-		WRITE(*,721)JLINE
- 721  	FORMAT(15X,'JOINTLY OWNED UNIT DOES NOT EXIST IN ZZUD DATA',
+      IABORT=1
+ 535  CONTINUE
+      GO TO 470
+ 475  CONTINUE
+      JLINE=LNCOUNT(II,1)
+      WRITE(JU4,465)NAT(II)
+      BACKSPACE JU4
+      READ(JU4,466)NA1,NA2
+      BACKSPACE JU4
+      ITAG=0
+      DO 710 K4=1,NUNITS
+      IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))ITAG=K4
+ 710  CONTINUE
+      IF(ITAG.GE.1)GO TO 720
+      WRITE(*,721)JLINE
+ 721  FORMAT(15X,'JOINTLY OWNED UNIT DOES NOT EXIST IN ZZUD DATA',
      */,15X,'PROGRAM ABORTED',
      */,15X,'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
-		IABORT=1
- 720  	CONTINUE
-		TOT=0.
-		DO 730 J=1,NOAREA
-			TOT=HRLOAD(J,II)+TOT
-
- 730  	CONTINUE
-		IF(TOT.EQ.100.)GO TO 735
-		WRITE(*,736)JLINE
- 736  	FORMAT(15X,'OWNERSHIPS DONOT SUM TO 100 PERCENT',/,
+      IABORT=1
+ 720  CONTINUE
+      TOT=0.
+      DO 730 J=1,NOAREA
+      TOT=HRLOAD(J,II)+TOT
+ 730  CONTINUE
+      IF(TOT.EQ.100.)GO TO 735
+      WRITE(*,736)JLINE
+ 736  FORMAT(15X,'OWNERSHIPS DONOT SUM TO 100 PERCENT',/,
      *15X,'PROGRAM ABORTED',/,15X,
      *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
-		IABORT=1
-
- 735  	CONTINUE
-
+      IABORT=1
+ 735  CONTINUE
  470  CONTINUE
-
       ILINE=ILINET
       JLINE=JLINET
       CALL ARANGB(SN,SNBI,IT)
@@ -5859,35 +5464,29 @@ CPC 96
  260  FORMAT(I3)
       LL=0
       DO 150 I=1,IT
-		IF(SNBI(I).EQ.0)GO TO 150
-		LL=LL+1
-		L=SN(I)
-		WRITE(JU4,465)NAT(L)
-		BACKSPACE JU4
-		READ(JU4,466)NA1,NA2
-		BACKSPACE JU4
-466   	FORMAT(A4,A2)
-465   	FORMAT(A8)
-		DO 148 K4=1,NUNITS
-			IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))NUMU=K4
-
-148   	CONTINUE
-		WRITE(JU1,460)NUMU,(HRLOAD(J,L),J=1,NOAREA)
-
+      IF(SNBI(I).EQ.0)GO TO 150
+      LL=LL+1
+      L=SN(I)
+      WRITE(JU4,465)NAT(L)
+      BACKSPACE JU4
+      READ(JU4,466)NA1,NA2
+      BACKSPACE JU4
+466   FORMAT(A4,A2)
+465   FORMAT(A8)
+      DO 148 K4=1,NUNITS
+      IF((NA1.EQ.NAMU(K4)).AND.(NA2.EQ.NUMP(K4)))NUMU=K4
+148   CONTINUE
+      WRITE(JU1,460)NUMU,(HRLOAD(J,L),J=1,NOAREA)
  150  CONTINUE
       IF(LL.LE.600)GO TO 151
       WRITE(*,152)
  152  FORMAT(15X,'NO OF JNT OWNED UNITS GREATER THAN 600',
      */,15X,'PROGRAM ABORTED',/)
       IABORT=1
-
  151  CONTINUE
  460  FORMAT(I3,1X,15(F5.1,1X))
       RETURN
       END
-
-
-
 C
 C SUBROUTINE TO CREATE ZZTD
 C
@@ -5923,7 +5522,6 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-
  70   CONTINUE
       ILINE=ILINE-1
       GO TO 140
@@ -5936,19 +5534,15 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *'ERROR OCCURED IN INPUTB IN LINE ',I4,/)
        IABORT=1
        RETURN
-
  505  CONTINUE
       READ(JU2,*)SNRI(II),ID(II,1),NAR(II),NAE(II)
      *,(HRLOAD(J,II),J=1,15),(DYLOAD(J,II),J=1,9)
       LNCOUNT(II,1)=ILINE
-
       IF(II.NE.1)GO TO 510
       IF(SNRI(II).EQ.1)GO TO 510
-
       WRITE(*,511)ILINE
  511  FORMAT(15X,'WARNING: FIRST S.N. IN ZZTD DATA IN INPUTB NOT 1'
      *,/,15X,'WARNING OCCURED IN LINE',I4,/)
-
  510  CONTINUE
       ILINE=ILINE+1
       GO TO 120
@@ -5957,29 +5551,23 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
       IT=II
       DO 200 I=1,N
  200  READ(JU3,110)(TITL(J),J=1,20)
-
 C UPDATE LINE NUMBER IN INPUTC-C. SINGH DEC 1993
       JLINE=JLINE+N
       I1=0
  220  READ(JU3,10)STRING
-
 C UPDATE LINE NUMBER IN INPUTC-C. SINGH DEC 1993
       JLINE=JLINE+1
       READ(STRING,110)(TITL(J),J=1,20)
-
       NI=0
       DO 215 I=1,20
-		IF(TITL(I).NE.BLANK)NI=1
-
+      IF(TITL(I).NE.BLANK)NI=1
  215  CONTINUE
  20   FORMAT(A2)
  21   FORMAT(A4)
-
       IF(NI.EQ.0)GO TO 220
       READ(STRING,20)IC
       IF(IC.NE.CARD)GO TO 230
       BACKSPACE JU3
-
 C UPDATE LINE NUMBER IN INPUTC
       READ(STRING,21)IC
       IF(IC.EQ.CBDD)GO TO 80
@@ -5988,11 +5576,9 @@ C UPDATE LINE NUMBER IN INPUTC
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-
  80   CONTINUE
       JLINE=JLINE-1
       GO TO 240
-
 CPC 96
  230  WRITE(18,FMT='(A80)')STRING
       BACKSPACE 18
@@ -6009,17 +5595,14 @@ CPC 96
      *'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
        IABORT=1
        RETURN
-
  705  CONTINUE
       READ(JU3,*)SNRI(II),ID(II,1),NAR(II),NAE(II)
      *,(HRLOAD(J,II),J=1,15),(DYLOAD(J,II),J=1,9)
       LNCOUNT(II,1)=JLINE
       JLINE=JLINE+1
       GO TO 220
-
  270  CONTINUE
       III=III+1
-
 CPC 96
       WRITE(18,FMT='(A80)')STRING
       BACKSPACE 18
@@ -6027,7 +5610,6 @@ CPC 96
       BACKSPACE 18
       JLINE=JLINE+1
       GO TO 220
-
  240  CONTINUE
       ITEMP=IT
       IT=II
@@ -6036,31 +5618,27 @@ CPC 96
       SNBI(I)=(SNRI(I)+.000001)*1000
       SN(I)=I
       SNDI(I)=(SNXI(I)+.000001)*1000
-
  441  CONTINUE
       IF(III.EQ.0)GO TO 401
       DO 400 I=1,III
       DO 400 J=1,II
       IF(SNBI(J).EQ.SNDI(I))SNBI(J)=0
-
  400  CONTINUE
  401  CONTINUE
       IF(II.EQ.IT)GO TO 446
       DO 442 I=1,II
-		IIT=II+1
-		DO 443 J=IIT,IT
-			IF(SNBI(I).EQ.SNBI(J))SNBI(I)=0
-
- 443  	CONTINUE
+      IIT=II+1
+      DO 443 J=IIT,IT
+      IF(SNBI(I).EQ.SNBI(J))SNBI(I)=0
+ 443  CONTINUE
  442  CONTINUE
-
  446  CONTINUE
       ILINET=ILINE
       JLINET=JLINE
       DO 470 II=1,IT
-		IF(SNBI(II).EQ.0)GO TO 470
-		IF(II.GT.ITEMP)GO TO 475
-		ILINE=LNCOUNT(II,1)
+      IF(SNBI(II).EQ.0)GO TO 470
+      IF(II.GT.ITEMP)GO TO 475
+      ILINE=LNCOUNT(II,1)
       WRITE(JU4,465)NAR(II),NAE(II)
       BACKSPACE JU4
       READ(JU4,466)NA1,NA2
@@ -6193,7 +5771,6 @@ CPC 96
      */,15X,'PROGRAM ABORTED',/,
      *15X,'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
       IABORT=1
-
  740  CONTINUE
       SUMPR=HRLOAD(4,II)+HRLOAD(8,II)+HRLOAD(12,II)+
      *DYLOAD(1,II)+DYLOAD(5,II)+DYLOAD(9,II)-1.
@@ -6204,42 +5781,36 @@ CPC 96
      *,/,15X,'PROGRAM ABORTED',/,
      *15X,'ERROR OCCURED IN INPUTC IN LINE ',I4,/)
       IABORT=1
-
  745  CONTINUE
  470  CONTINUE
       ILINE=ILINET
       JLINE=JLINET
-
       CALL ARANGB(SN,SNBI,IT)
-
       K=0
       DO 141 I=1,IT
-		IF(SNBI(I).EQ.0)GO TO 141
-		K=K+1
-
+      IF(SNBI(I).EQ.0)GO TO 141
+      K=K+1
  141  CONTINUE
       WRITE(JU1,260)K
  260  FORMAT(I2)
       LL=0
       DO 150 I=1,IT
-		IF(SNBI(I).EQ.0)GO TO 150
-		LL=LL+1
-		L=SN(I)
-
-		WRITE(JU4,465)NAR(L),NAE(L)
-		BACKSPACE JU4
-		READ(JU4,466)NA1,NA2
-		BACKSPACE JU4
-466   	FORMAT(A4,A4)
-465   	FORMAT(A4,A4)
-
-		DO 148 K4=1,NOAREA
-			IF(NA1.EQ.NAMA(K4))NUMA1=K4
-			IF(NA2.EQ.NAMA(K4))NUMA2=K4
-148   	CONTINUE
-		NML(LL)=ID(L,1)
-		NMLR(ID(L,1))=LL
-		WRITE(JU1,460)LL,NUMA1,NUMA2
+      IF(SNBI(I).EQ.0)GO TO 150
+      LL=LL+1
+      L=SN(I)
+      WRITE(JU4,465)NAR(L),NAE(L)
+      BACKSPACE JU4
+      READ(JU4,466)NA1,NA2
+      BACKSPACE JU4
+466   FORMAT(A4,A4)
+465   FORMAT(A4,A4)
+      DO 148 K4=1,NOAREA
+      IF(NA1.EQ.NAMA(K4))NUMA1=K4
+      IF(NA2.EQ.NAMA(K4))NUMA2=K4
+148   CONTINUE
+      NML(LL)=ID(L,1)
+      NMLR(ID(L,1))=LL
+      WRITE(JU1,460)LL,NUMA1,NUMA2
      *,(HRLOAD(J,L),J=1,3)
      *,(HRLOAD(J,L),J=5,7)
      *,(HRLOAD(J,L),J=9,11)
@@ -6252,9 +5823,6 @@ CPC 96
      *,6(F7.5,1X))
       RETURN
       END
-
-
-
 C
 C SUBROUTINE TO CREATE ZZDD
 C
@@ -6263,29 +5831,24 @@ C
       INCLUDE 'NARPCOM.txt'
       II=0
       N=3
-	  
       DO 100 I=1,N
- 100    READ(JU2,110)(TITL(J),J=1,20)
+ 100  READ(JU2,110)(TITL(J),J=1,20)
  110  FORMAT(20A4)
- 
       ILINE=ILINE+N
       I1=0
  120  READ(JU2,10,END=123)STRING
  10   FORMAT(A80)
- 
 C UPDATE LINE NUMBER IN INPUTB- C. SINGH DEC 1993
       ILINE=ILINE+1
       READ(STRING,110)(TITL(J),J=1,20)
       NI=0
       DO 115 I=1,20
-        IF(TITL(I).NE.BLANK)NI=1
+      IF(TITL(I).NE.BLANK)NI=1
  115  CONTINUE
- 
       IF(NI.EQ.0)GO TO 120
       READ(STRING,20)IC
       IF(IC.NE.CARD)GO TO 130
       BACKSPACE JU2
-	  
 C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
       READ(STRING,21)IC
       IF(IC.EQ.CBND)GO TO 70
@@ -6294,11 +5857,9 @@ C UPDATE LINE NUMBER IN INPUTB -C. SINGH DEC 1993
      *15X,'PROGRAM ABORTED',/,15X,'ERROR OCCURED IN LINE',I4,/)
       IABORT=1
       RETURN
-	  
  70   CONTINUE
       ILINE=ILINE-1
       GO TO 140
-	  
  130  II=II+1
       IF(II.LE.SNRIL)GO TO 505
       WRITE(*,506)ILINE
@@ -6322,15 +5883,12 @@ CPC 96
      *,/,15X,'WARNING OCCURED IN LINE',I4,/)
  510  CONTINUE
       GO TO 120
-	  
  123  CONTINUE
- 
       WRITE(*,124)
  124  FORMAT(15X,'END OF INPUTB REACHED BEFORE ZZND',/,
      *15X,'PROGRAM ABORTED',/)
       IABORT=1
       RETURN
-	  
  140  CONTINUE
       III=0
       IT=II
@@ -6402,19 +5960,16 @@ CPC 96
       READ(18,*)IX,SNXI(III)
       BACKSPACE 18
       GO TO 220
-	  
  240  CONTINUE
       ITEMP=IT
       IT=II
       II=ITEMP
       IF(IT.EQ.0)GO TO 447
-	  
       DO 441 I=1,IT
-        SNBI(I)=(SNRI(I)+.000001)*1000
-        SN(I)=I
-        SNDI(I)=(SNXI(I)+.000001)*1000
+      SNBI(I)=(SNRI(I)+.000001)*1000
+      SN(I)=I
+      SNDI(I)=(SNXI(I)+.000001)*1000
  441  CONTINUE
- 
       IF(III.EQ.0)GO TO 401
       IF(II.EQ.0)GO TO 401
       DO 400 I=1,III
@@ -6499,18 +6054,16 @@ CPC 96
       BACKSPACE JU4
       READ(JU4,466)(NATT(J),J=1,8)
       BACKSPACE JU4
-	  
       NUMU1=0
       NUMU2=0
       NUMU3=0
       NUMU4=0
       DO 748 K4=1,NUNITS
-        IF((NATT(1).EQ.NAMU(K4)).AND.(NATT(2).EQ.NUMP(K4)))NUMU1=K4
-        IF((NATT(3).EQ.NAMU(K4)).AND.(NATT(4).EQ.NUMP(K4)))NUMU2=K4
-        IF((NATT(5).EQ.NAMU(K4)).AND.(NATT(6).EQ.NUMP(K4)))NUMU3=K4
-        IF((NATT(7).EQ.NAMU(K4)).AND.(NATT(8).EQ.NUMP(K4)))NUMU4=K4
+      IF((NATT(1).EQ.NAMU(K4)).AND.(NATT(2).EQ.NUMP(K4)))NUMU1=K4
+      IF((NATT(3).EQ.NAMU(K4)).AND.(NATT(4).EQ.NUMP(K4)))NUMU2=K4
+      IF((NATT(5).EQ.NAMU(K4)).AND.(NATT(6).EQ.NUMP(K4)))NUMU3=K4
+      IF((NATT(7).EQ.NAMU(K4)).AND.(NATT(8).EQ.NUMP(K4)))NUMU4=K4
 748   CONTINUE
-
       IF(NUMU1.GE.1)GO TO 720
       IF(NATT(1).EQ.CBXX)GO TO 720
       WRITE(*,721)JLINE
@@ -6582,18 +6135,16 @@ CPC 96
       BACKSPACE JU4
 466   FORMAT(4(A4,A2,2X))
 465   FORMAT(4A8)
-
       NUMU1=0
       NUMU2=0
       NUMU3=0
       NUMU4=0
       DO 148 K4=1,NUNITS
-        IF((NATT(1).EQ.NAMU(K4)).AND.(NATT(2).EQ.NUMP(K4)))NUMU1=K4
-        IF((NATT(3).EQ.NAMU(K4)).AND.(NATT(4).EQ.NUMP(K4)))NUMU2=K4
-        IF((NATT(5).EQ.NAMU(K4)).AND.(NATT(6).EQ.NUMP(K4)))NUMU3=K4
-        IF((NATT(7).EQ.NAMU(K4)).AND.(NATT(8).EQ.NUMP(K4)))NUMU4=K4
+      IF((NATT(1).EQ.NAMU(K4)).AND.(NATT(2).EQ.NUMP(K4)))NUMU1=K4
+      IF((NATT(3).EQ.NAMU(K4)).AND.(NATT(4).EQ.NUMP(K4)))NUMU2=K4
+      IF((NATT(5).EQ.NAMU(K4)).AND.(NATT(6).EQ.NUMP(K4)))NUMU3=K4
+      IF((NATT(7).EQ.NAMU(K4)).AND.(NATT(8).EQ.NUMP(K4)))NUMU4=K4
 148   CONTINUE
-
       LX=ID(L,1)
       NLL=NMLR(LX)
       WRITE(JU1,460)NLL,NUMU1,NUMU2,NUMU3,NUMU4,RATES(L,1)
@@ -6606,27 +6157,22 @@ CPC 96
       RETURN
       END
 
-
-
-C------Yongli: Adjust if SNBI not in ascending order -------
       SUBROUTINE ARANGB(SN,SNBI,II)
       INTEGER SNBI(500),SN(500)
       III=II-1
       DO 100 I=1,III
-		I1=I+1
-		DO 100 J=I1,II
-			IF(SNBI(I).LE.SNBI(J))GO TO 100
-			ITEM1 =SNBI(I)
-			ITEM2 =SN(I)
-			SNBI(I)=SNBI(J)
-			SN(I)=SN(J)
-			SNBI(J)=ITEM1
-			SN(J)=ITEM2
+      I1=I+1
+      DO 100 J=I1,II
+      IF(SNBI(I).LE.SNBI(J))GO TO 100
+      ITEM1 =SNBI(I)
+      ITEM2 =SN(I)
+      SNBI(I)=SNBI(J)
+      SN(I)=SN(J)
+      SNBI(J)=ITEM1
+      SN(J)=ITEM2
  100  CONTINUE
       RETURN
       END
-
-
 
        SUBROUTINE PIND(JU1,JU)
 C   THERE WERE MANY FTN ERRORS CLEANED UP HERE IN DIM STMTS GENE P. 1/26/89
@@ -6764,21 +6310,20 @@ C   THERE WERE MANY FTN ERRORS CLEANED UP HERE IN DIM STMTS GENE P. 1/26/89
        READ(JU1,315)NUNITS
 315    FORMAT(I3)
        DO 300 I=1,NUNITS
-         READ(JU1,320)M1,M2,M3,R1,R2,R3,R4,R5,R6,R7,N1,N2,N3,N4,N5
-         IF(IC.NE.ICOUNT)GO TO 330
-           WRITE(JU,10)
-           WRITE(JU,15)
-           WRITE(JU,335)
-           WRITE(JU,310)ITAB
-           WRITE(JU,340)
-           ICOUNT=ICOUNT+50
-330      CONTINUE
-         ICOM=MODP
-         IF(N5.EQ.0)ICOM=MODA
-         WRITE(JU,325)NAMU(M1),NUMP(M1),NAMA(M3),R1,R2,R3,R4,R5,R6,R7,
-       *ICOM,N1,N2,N3,N4
+       READ(JU1,320)M1,M2,M3,R1,R2,R3,R4,R5,R6,R7,N1,N2,N3,N4,N5
+       IF(IC.NE.ICOUNT)GO TO 330
+       WRITE(JU,10)
+       WRITE(JU,15)
+       WRITE(JU,335)
+       WRITE(JU,310)ITAB
+       WRITE(JU,340)
+       ICOUNT=ICOUNT+50
+330    CONTINUE
+       ICOM=MODP
+       IF(N5.EQ.0)ICOM=MODA
+       WRITE(JU,325)NAMU(M1),NUMP(M1),NAMA(M3),R1,R2,R3,R4,R5,R6,R7,
+     *ICOM,N1,N2,N3,N4
 300    CONTINUE
-
 325    FORMAT(5X,A4,A2,6X,A4,6X,4(F6.0,1X),2X,F5.4,4X,F5.4,4X,F3.0,5X,
      *A4,5X,2(I2,4X,I2,6X))
 320    FORMAT(3(I3,1X),4(F6.0,1X),2(F5.4,1X),F3.0,1X,2(I2,1X,I2,1X),I1)
@@ -6918,8 +6463,6 @@ C   THERE WERE MANY FTN ERRORS CLEANED UP HERE IN DIM STMTS GENE P. 1/26/89
        RETURN
        END
 
-
-
        SUBROUTINE INPUT(JU)
 
 C THIS SUBROUTINE READS DATA FROM INPUT.DAT AND CREATES APPROPRIATE
@@ -6999,55 +6542,41 @@ C F1,F2 : FORWARD AND BACKWARD MOD FACTORS.
 C THIS IS FOLLOWED BY LOAD DATA FOR THE ARAEAS.FIRST INPUT LOAD DATA FOR
 C AREA 1 THEN FOR 2 AND SO ON. EACH LINE READS DATA FOR 12 HOURS IN THE
 C FORMAT 12F6.0
-
       INCLUDE 'NARPERC.txt'
       INCLUDE 'NARPCOM.txt'
 	ISH=0
 	JU1=13
 	JU8=8
 	DO 100 I=1,52
-      DO 100 J=1,120
+	DO 100 J=1,120
 100     JPLOUT(I,J)=0
-
 C READ DATA FROM FILE INPUT.DAT AND CREATE THE APPROPRIATE ARRAYS.
 	CALL  DATAX(JU)
-
 C READ LOAD DATA FROM INPUT.DAT
 C        CALL XLDPU(JU8)
 C        CALL XLD(JU8)
-
 	 CALL XLDNEW(JU8)
 	 IF(IABORT.NE.0)RETURN
-
 C ADD INTERCHANGES
 	CALL XPORTA
-
 C FIND DAILY PEAKS AND HOUR OF DAILY PEAKS
 	CALL DPEAK
-
 C FIND WEEKLY PEAKS
 	CALL WPEAKF
-
 C FIND HOUR OF POOL DAILY PEAKS
 	CALL PLHR
-
 C REMOVE INTERCHANGES AND RESTORE HRLOAD
 	CALL XPORTS
-
 C        DO 400 I=1,365
 C       WRITE(*,351)(DYLOAD(K,I),K=1,NOAREA),(MAXHR(K,I),K=1,
 C     *  NOAREA),MXPLHR(I)
 C400     CONTINUE
 C351     FORMAT(2X,3(F7.0),3I6,I6)
-
 C CALCULATE THE TOTAL OWNED CAP AND INTERCHANGE AT PEAK
 C SUBROUTINE ADDED APRIL 1994-C. SINGH
-
 	CALL RESCA
-
 C PREPARE JPLOUT - TABLE OF PLANNED OUTAGES OF UNITS
 	CALL SMAINT
-
 C     WRITE(*,*) ' ** JPLOUT MATRIX BY WEEK **'
 C       DO 500 I=1,52
 C      WRITE(*,501) I,(JPLOUT(I,J),J=1,20)
@@ -7055,10 +6584,6 @@ C 501 FORMAT(1X,I2,2X,20I4)
 C 500    CONTINUE
 	RETURN
 	END
-
-
-
-
 C
 C THIS SUBROUTINE READS ALL DATA EXCEPT THE HOURLY LOAD DATA AND
 C CREATES APPROPRIATE ARRAYS.
@@ -7073,10 +6598,10 @@ C
 C READ TITLE CARDS
 C
 C
-      READ(JU,1)K
- 1    FORMAT(2X,I2)
+       READ(JU,1)K
+ 1     FORMAT(2X,I2)
       DO 2 I=1,K
-        READ(JU,3)(AX(I,J),J=1,39)
+      READ(JU,3)(AX(I,J),J=1,39)
  2    CONTINUE
  3    FORMAT(2X,39A2)
 
@@ -7099,27 +6624,24 @@ C
       NORR=1
       NFCST=1
       READ(JU,100) NOAREA
-	  
       DO 200 J=1,NOAREA
-        READ(JU,110)PKLOAD(J),FU(J),MINRAN(J),MAXRAN(J),INHBT1(J),
+      READ(JU,110)PKLOAD(J),FU(J),MINRAN(J),MAXRAN(J),INHBT1(J),
      *  INHBT2(J),BN(J,4)
-        BN(J,5)=BN(J,4)
-        SUSTAT(J,1)=PKLOAD(J)
-        IF(FU(J).NE.0.)NORR=3
-        IF(FU(J).NE.0.)NFCST=5
-        BN(J,1)=J
-        BN(J,2)=0
-        BN(J,3)=0
-	    FCTERR(J,3)=1.
-	    FCTERR(J,4)=1.-FU(J)/100.
-	    FCTERR(J,2)=1.+FU(J)/100.
-	    FCTERR(J,1)=1.+FU(J)*2.5/100.
-	    FCTERR(J,5)=1.-FU(J)*2.5/100.
-200   CONTINUE
-100   FORMAT(I2)
+      BN(J,5)=BN(J,4)
+      SUSTAT(J,1)=PKLOAD(J)
+      IF(FU(J).NE.0.)NORR=3
+      IF(FU(J).NE.0.)NFCST=5
+      BN(J,1)=J
+      BN(J,2)=0
+      BN(J,3)=0
+	FCTERR(J,3)=1.
+	FCTERR(J,4)=1.-FU(J)/100.
+	FCTERR(J,2)=1.+FU(J)/100.
+	FCTERR(J,1)=1.+FU(J)*2.5/100.
+	FCTERR(J,5)=1.-FU(J)*2.5/100.
+200     CONTINUE
+100     FORMAT(I2)
 110   FORMAT(F8.0,1X,F5.0,1X,4(I2,1X),F8.0)
-
-
 C
 C  CREATE PROBD(5) PROB DIST OF LOAD FORECAST UNCERTAINTY.
 C
@@ -7128,7 +6650,6 @@ C
 	PROBD(3)=.382
 	PROBD(4)=.242
 	PROBD(5)=.067
-	
 C
 C  READ UNIT DATA AND CREATE
 C  DERATE(I)= FRACTION OF UNIT I AVAILABLE AFTER DERATING
@@ -7138,54 +6659,45 @@ C  PROB(K,I):CUM. PROB. THAT UNIT I IS IN STATE K. K=1 FULL AVAIL.
 C  K=2 DERATE
 C  RATES(I,K) SEASONAL RATING OF UNIT I, K=1,4
 C  1= JAN,MAR 2=APR,JUNE, 3=JULY,SEPT, 4=OCT,DEC.
-
+C  NOGEN(J) NUMBER OF GENERATORS IN AREA J
+C  NUNITS   NUMBER OF GENERATORS IN THE ENTIRE MODEL.
       DO 900 J=1,15
-         DO 900 I=1,600
- 900        CAPOWN(J,I)=0.0
+      DO 900 I=1,600
+ 900  CAPOWN(J,I)=0.0
 
       READ(JU,300) NUNITS
 C     WRITE(*,311) NUNITS
 C311  FORMAT(' ',' THE NUMBER OF UNITS IS',I4)
 300     FORMAT(I3)
-
       DO 400 J=1,NOAREA
-400     NOGEN(J)=0
-
+400   NOGEN(J)=0
       DO 500 I=1,NUNITS
-        READ(JU,310)(ID(I,K),K=1,3),(RATES(I,K),K=1,4),DFOR,FOR,
+      READ(JU,310)(ID(I,K),K=1,3),(RATES(I,K),K=1,4),DFOR,FOR,
      *  DERATE(I), (ID(I,K),K=4,8)
-	    J=ID(I,3)
-	    J1=ID(I,1)
-	    CAPCON(J1)=J
-	    CAPOWN(J,J1)=1.
-	    NOGEN(J)=NOGEN(J)+1
+	J=ID(I,3)
+	J1=ID(I,1)
+	CAPCON(J1)=J
+	CAPOWN(J,J1)=1.
+	NOGEN(J)=NOGEN(J)+1
 
-        PROBG(I,1)=1.0-FOR-DFOR
-        PROBG(I,2)=1.-FOR
-	    DERATE(I)=1.-DERATE(I)/100.
-500   CONTINUE
-
+      PROBG(I,1)=1.0-FOR-DFOR
+      PROBG(I,2)=1.-FOR
+	DERATE(I)=1.-DERATE(I)/100.
+500     CONTINUE
 310   FORMAT(3(I3,1X),4(F6.0,1X),2(F5.4,1X),F3.0,1X,2(I2,1X,
      *  I2,1X),I1)
-	 
 	IF(ISH.EQ.0)GO TO 512
-	
 	DO 510 I=1,NUNITS
-	  WRITE(JU1,511)(ID(I,K),K=1,8),(RATES(I,K),K=1,4),DERATE(I),
+	WRITE(JU1,511)(ID(I,K),K=1,8),(RATES(I,K),K=1,4),DERATE(I),
      *  PROBG(I,1),PROBG(I,2)
-510 CONTINUE
-
+510     CONTINUE
 511   FORMAT(2X,8(I3,1X),4(F6.0),F5.1,2(F7.5,1X))
-
 	DO 210 J=1,NOAREA
-	  WRITE(JU1,115)PKLOAD(J),FU(J),MINRAN(J),MAXRAN(J),INHBT1(J)
+	WRITE(JU1,115)PKLOAD(J),FU(J),MINRAN(J),MAXRAN(J),INHBT1(J)
      *  ,INHBT2(J),BN(J,1),BN(J,4),NOGEN(J)
-210 CONTINUE
-
-512 CONTINUE
-115 FORMAT(5X,F5.0,1X,F5.2,1X,4(I2,1X),2(F6.0,1X),I3)
-
-
+210     CONTINUE
+512     CONTINUE
+115     FORMAT(5X,F5.0,1X,F5.2,1X,4(I2,1X),2(F6.0,1X),I3)
 C
 C  READ CONTRACT INTERCHANGES BETWEEN AREAS AND CREATE :
 C  JENT(J1,J2)-- MATRIX INDICATING AREAS WHICH HAVE INTERCHANGE
@@ -7194,79 +6706,60 @@ C  INTCH(L,N)- CONTRACT INTERCHANGES BETWEEN AREAS INDICATED BY POINTER
 C  L, DAY N.
 C
       DO 600 I=1,15
-        DO 600 J=1,15
-600       JENT(I,J)=0
-
+      DO 600 J=1,15
+600     JENT(I,J)=0
       DO 650 L=1,60
-        DO 650 N=1,365
-650       INTCH(L,N)=0
-
+      DO 650 N=1,365
+650     INTCH(L,N)=0
       READ(JU,700) IT
 700     FORMAT(I3)
-
       IP=0
-	  IF(IT.EQ.0)GO TO 821
-	  
+	IF(IT.EQ.0)GO TO 821
       DO 800 I=1,IT
-        READ(JU,815) J1,J2,I1,I2,MW
-        IF(JENT(J1,J2) .NE. 0) GO TO 810
-          IP=IP+1
-          JENT(J1,J2)=IP
-          INTCHR(IP,1)=J1
-          INTCHR(IP,2)=J2
+      READ(JU,815) J1,J2,I1,I2,MW
+      IF(JENT(J1,J2) .NE. 0) GO TO 810
+      IP=IP+1
+      JENT(J1,J2)=IP
+      INTCHR(IP,1)=J1
+      INTCHR(IP,2)=J2
 810     CONTINUE
-        L=JENT(J1,J2)
-        DO 820 K=I1,I2
-820       INTCH(L,K)=MW
-800   CONTINUE
-
+      L=JENT(J1,J2)
+      DO 820 K=I1,I2
+820     INTCH(L,K)=MW
+800     CONTINUE
 815     FORMAT(I2,1X,I2,1X,I3,1X,I3,1X,I5)
-
 	IF(ISH.EQ.0)GO TO 821
-	
 	DO 816 I=1,15
-	  WRITE(*,817)(JENT(I,J),J=1,15)
-816 CONTINUE
+	WRITE(*,817)(JENT(I,J),J=1,15)
+816     CONTINUE
 817     FORMAT(2X,15I5)
-
 	DO 818  I=1,365
-	  WRITE(*,819)(INTCH(L,I),L=1,20)
-818 CONTINUE
-
-821 CONTINUE
+	WRITE(*,819)(INTCH(L,I),L=1,20)
+818     CONTINUE
+821     CONTINUE
 819     FORMAT(20I4)
-
-
 C
 C  READ OWNERSHIP OF UNITS AND CREATE CAPOWN(J,I),
-C  FRACTION OF UNIT I OWNED BY AREA J.
+C  FRACTION OF UNIT I OWNED BY AREA I.
 C
       READ(JU,910) IT1
 910     FORMAT(I3)
-	  IF(IT1.EQ.0)GO TO 924
-	  
+	IF(IT1.EQ.0)GO TO 924
       DO 950 I=1,IT1
-        READ(JU,920) IU,(C(J),J=1,NOAREA)
-		
-C       WRITE(JU1,923)IU,(C(J),J=1,NOAREA)
+      READ(JU,920) IU,(C(J),J=1,NOAREA)
+C        WRITE(JU1,923)IU,(C(J),J=1,NOAREA)
 C923    FORMAT(2X,I3,2X,15(F4.0,1X))
-
-        DO 960 J=1,15
-          CAPOWN(J,IU)=C(J)/100.
+      DO 960 J=1,15
+      CAPOWN(J,IU)=C(J)/100.
 960     CONTINUE
-950   CONTINUE
-
+950     CONTINUE
 920     FORMAT(I3,1X,15(F5.1,1X))
 	IF(ISH.EQ.0)GO TO 924
-	
 	DO 922 I=1,NUNITS
-	  WRITE(JU1,921)(CAPOWN(J,I),J=1,NOAREA)
+	WRITE(JU1,921)(CAPOWN(J,I),J=1,NOAREA)
 922     CONTINUE
-
 924     CONTINUE
 921     FORMAT(2X,15(F5.2))
-
-
 C
 C   READ LINE DATA AND CREATE
 C   LINENO(J1,J2) LINE NUMBER BETWEEN AREA J1 AND J2.
@@ -7276,47 +6769,38 @@ C   IN STATE K, K=1,5.
 C
       READ(JU,1000) NLINES
 1000    FORMAT(I2)
-
       DO 1100 L=1,NLINES
-        READ(JU,1110)(LP(L,K),K=1,3),(BLPA(L,K),K=1,18),
+      READ(JU,1110)(LP(L,K),K=1,3),(BLPA(L,K),K=1,18),
      *  (PROBL(K,L),K=1,6)
-        J0= LP(L,1)
-        J1=LP(L,2)
-        J2=LP(L,3)
-        LINENO(J1,J2)=J0
+      J0= LP(L,1)
+      J1=LP(L,2)
+      J2=LP(L,3)
+      LINENO(J1,J2)=J0
 1100  CONTINUE
-
 	DO 1150 L=1,NLINES
-	  DO 1160 M=2,6
-	    PROBL(M,L)=PROBL(M,L)+PROBL(M-1,L)
-1160  CO NTINUE
-1150 CONTINUE
-
+	DO 1160 M=2,6
+	PROBL(M,L)=PROBL(M,L)+PROBL(M-1,L)
+1160    CONTINUE
+1150    CONTINUE
 	DO 1151 I=1,NLINES
-	  DO 1152 J=1,16,3
-	    IBIN=BLPA(I,J)
-	    IF(IBIN.NE.0)GO TO 1153
-	      BLPA(I,J)=-.5
-	      BLPA(I,J+1)=1.
-	      BLPA(I,J+2)=1.
+	DO 1152 J=1,16,3
+	IBIN=BLPA(I,J)
+	IF(IBIN.NE.0)GO TO 1153
+	BLPA(I,J)=-.5
+	BLPA(I,J+1)=1.
+	BLPA(I,J+2)=1.
  1153   CONTINUE
- 1152 CONTINUE
- 1151 CONTINUE
- 
+ 1152   CONTINUE
+ 1151   CONTINUE
 1110    FORMAT(3(I2,1X),6(F7.0,1X),/9(F7.0,1X),/,9(F7.0,1X))
 1111    FORMAT(3(I2,1X),6(F7.0,1X),/9(F7.0,1X),/,9(F7.2,1X))
-
 	IF(ISH.EQ.0)GO TO 1162
-	
 	DO 1161 I=1,NLINES
-	  WRITE(JU1,1111)(LP(I,K),K=1,3),(BLPA(I,K),K=1,18),
+	WRITE(JU1,1111)(LP(I,K),K=1,3),(BLPA(I,K),K=1,18),
      *  (PROBL(K,I),K=1,6)
-1161 CONTINUE
-
-1162 CONTINUE
+1161    CONTINUE
+1162    CONTINUE
 C1112   FORMAT(2X,3I4,6(F6.4,2X))
-
-
 C
 C READ CRITICAL UNIT DATA AND CREATE JCRIT(L) -
 C POSITION 1           LINE NUMBER
@@ -7330,38 +6814,31 @@ C
 1200    FORMAT(I3)
 1210    FORMAT(I2,1X,4(I3,1X),2(F5.0,1X))
 	 MXCRIT=IT2
-	 
 	IF(IT2.EQ.0)GO TO 1271
-	
 	DO 1251 I=1,IT2
-	  READ(JU,1210)(JCRITT(I,J),J=1,5),FCR(I,1),FCR(I,2)
-	  JCRITT(I,6)=0
-	  DO 1255 J1=2,5
-	    IF(JCRITT(I,J1).EQ.0)GO TO 1256
-	      JCRITT(I,6)=JCRITT(I,6)+1
+	READ(JU,1210)(JCRITT(I,J),J=1,5),FCR(I,1),FCR(I,2)
+	JCRITT(I,6)=0
+	DO 1255 J1=2,5
+	IF(JCRITT(I,J1).EQ.0)GO TO 1256
+	JCRITT(I,6)=JCRITT(I,6)+1
  1256   CONTINUE
- 1255 CONTINUE
-1251 CONTINUE
-
+ 1255   CONTINUE
+1251    CONTINUE
 	J=1
 1257    IND=500
 	DO 1252 I=1,IT2
-	  IF((JCRITT(I,1)).LT.IND)IND=JCRITT(I,1)
-1252 CONTINUE
-
+	IF((JCRITT(I,1)).LT.IND)IND=JCRITT(I,1)
+1252    CONTINUE
 	IF(IND.EQ.500)GO TO 1250
-	
 	IND1=0
 	IMAX=500
-	
 	DO 1253 I=1,IT2
-	  IF(IND.NE.(JCRITT(I,1)))GO TO 1254
-	  IF(JCRITT(I,6).GE.IMAX)GO TO 1254
-	  IND1=I
-	  IMAX=JCRITT(I,6)
- 1254 CONTINUE
- 1253 CONTINUE
- 
+	IF(IND.NE.(JCRITT(I,1)))GO TO 1254
+	IF(JCRITT(I,6).GE.IMAX)GO TO 1254
+	IND1=I
+	IMAX=JCRITT(I,6)
+ 1254   CONTINUE
+ 1253   CONTINUE
 	L1=JCRITT(IND1,1)
 	I1=JCRITT(IND1,2)
 	I2=JCRITT(IND1,3)
@@ -7389,56 +6866,45 @@ C
 	JCRITT(IND1,1)=500
 	J=N+3
 	GO TO 1257
-	
 1250    CONTINUE
 	JCRIT(J)=-1
-	
 	IF(ISH.EQ.0)GO TO 1271
 	DO 1270 I=1,J
-	  WRITE(JU1,700)JCRIT(I)
-1270 CONTINUE
-
-1271 CONTINUE
-     RETURN
-     END
-
-
-
+	WRITE(JU1,700)JCRIT(I)
+1270    CONTINUE
+1271    CONTINUE
+      RETURN
+      END
 C
 C THIS SUBROUTINE FINDS DAILY PEAKS
 C
       SUBROUTINE DPEAK
       INCLUDE 'NARPERC.txt'
-	  JC=0
-200   JC=JC+1
-	  IF(JC.GT.NOAREA)GO TO 150
-	  DO 100 I=1,365
-	    XMAX=0.
-	    DO 110 J=1,24
-	      J1=(I-1)*24+J
-	      IF(HRLOAD(JC,J1).LE.XMAX)GO TO 110
-	      XMAX=HRLOAD(JC,J1)
-	      MAXHR(JC,I)=J1
+	JC=0
+200     JC=JC+1
+	IF(JC.GT.NOAREA)GO TO 150
+	DO 100 I=1,365
+	XMAX=0.
+	DO 110 J=1,24
+	J1=(I-1)*24+J
+	IF(HRLOAD(JC,J1).LE.XMAX)GO TO 110
+	XMAX=HRLOAD(JC,J1)
+	MAXHR(JC,I)=J1
 110     CONTINUE
-	    DYLOAD(JC,I)=XMAX
-100   CONTINUE
-	  GO TO 200
-150   CONTINUE
-
-	  DO 250 I=1,NOAREA
-	    XMAX=0.
-	    DO 260 J=1,365
-	      IF(DYLOAD(I,J).LE.XMAX)GO TO 260
-	      XMAX=DYLOAD(I,J)
-	      MAXDAY(I)=J
+	DYLOAD(JC,I)=XMAX
+100     CONTINUE
+	GO TO 200
+150     CONTINUE
+	DO 250 I=1,NOAREA
+	XMAX=0.
+	DO 260 J=1,365
+	IF(DYLOAD(I,J).LE.XMAX)GO TO 260
+	XMAX=DYLOAD(I,J)
+	MAXDAY(I)=J
  260    CONTINUE
- 250  CONTINUE
+ 250    CONTINUE
 	RETURN
 	END
-
-
-
-
 C
 C THIS SUBROUTINE FINDS WEEKLY PEAKS
 C
@@ -7452,65 +6918,93 @@ C
 C        FIND WEEKLY PEAKS
 C
       DO 120 I=1,52
-        XMAX=0.
-        JW=7
-		
-        IF(I.EQ.52)JW=8
-		
-        DO 130 J=1,JW
-          J1=(I-1)*7+J
-          IF(DYLOAD(JC,J1).GT.XMAX) XMAX=DYLOAD(JC,J1)
-  130   CONTINUE
-  
-        WPEAK(JC,I)=XMAX
+      XMAX=0.
+      JW=7
+      IF(I.EQ.52)JW=8
+      DO 130 J=1,JW
+      J1=(I-1)*7+J
+      IF(DYLOAD(JC,J1).GT.XMAX)XMAX=DYLOAD(JC,J1)
+  130 CONTINUE
+      WPEAK(JC,I)=XMAX
   120 CONTINUE
-  
       GO TO 100
  500  RETURN
       END
 
-
-
 C
 C THIS SUBROUTINE FINDS THE POOL PEAK HOURS
 C
-     SUBROUTINE PLHR
-     INCLUDE 'NARPERC.txt'
-	 DO 100 I=1,365
-	   XMAX=0.
-	   DO 110 J=1,24
-	     J1=(I-1)*24+J
-	     HRL=0.
-		 
-	     DO 115 K=1,NOAREA
-115        HRL=HRLOAD(K,J1)+HRL
-
-	     IF(HRL.LE.XMAX)GO TO 110
-		 
-	     XMAX=HRL
-	     MXPLHR(I)=J1
-110   CONTINUE
-100 CONTINUE
+      SUBROUTINE PLHR
+      INCLUDE 'NARPERC.txt'
+	DO 100 I=1,365
+	XMAX=0.
+	DO 110 J=1,24
+	J1=(I-1)*24+J
+	HRL=0.
+	DO 115 K=1,NOAREA
+115     HRL=HRLOAD(K,J1)+HRL
+	IF(HRL.LE.XMAX)GO TO 110
+	XMAX=HRL
+	MXPLHR(I)=J1
+110     CONTINUE
+100     CONTINUE
 	RETURN
 	END
 
-
-
-
+	SUBROUTINE XLD(JU)
+      INTEGER IRLOAD(12)
+      INCLUDE 'NARPERC.txt'
+      INCLUDE 'NARPCOM.txt'
+	DO 210 I=1,15
+	DO 215 J=1,8760
+	HRLOAD(I,J)=0.
+ 215    CONTINUE
+ 210    CONTINUE
+	DO 200 I=1,NOAREA
+	READ(JU,350)IND1
+	IF(IND1.EQ.0)GO TO 205
+	BACKSPACE JU
+	DO 300 J=1,730
+	K1=(J-1)*12+1
+	K2=K1+11
+	READ(JU,350)(IRLOAD(K),K=1,12)
+	K3=0
+	DO 310 K=K1,K2
+	K3=K3+1
+	HRLOAD(I,K)=IRLOAD(K3)
+310     CONTINUE
+300     CONTINUE
+205     CONTINUE
+200     CONTINUE
+350     FORMAT(20X,12I5)
+	DO 400 I=1,NOAREA
+	XMAX=0.
+	DO 500 J=1,8760
+	IF(HRLOAD(I,J).GT.XMAX)XMAX=HRLOAD(I,J)
+500     CONTINUE
+	IF(XMAX.LT..001)XMAX=.001
+	DO 600 J=1,8760
+	HRLOAD(I,J)=HRLOAD(I,J)/XMAX
+600     CONTINUE
+400     CONTINUE
+	DO 700 I=1,NOAREA
+	DO 800 J=1,8760
+	HRLOAD(I,J)=HRLOAD(I,J)*PKLOAD(I)
+800     CONTINUE
+700     CONTINUE
+	RETURN
+	END
 	SUBROUTINE XLDNEW(JU)
-    INTEGER IRLOAD(12)
-    INCLUDE 'NARPERC.txt'
-    INCLUDE 'NARPCOM.txt'
-	
+      INTEGER IRLOAD(12)
+      INCLUDE 'NARPERC.txt'
+      INCLUDE 'NARPCOM.txt'
 	IAREA=0
 	LLINE=0
-	
 	DO 210 I=1,15
-	  DO 215 J=1,8760
-	    HRLOAD(I,J)=0.
- 215  CONTINUE
- 210  CONTINUE
- 
+	DO 215 J=1,8760
+	HRLOAD(I,J)=0.
+ 215    CONTINUE
+ 210    CONTINUE
 	WRITE(*,205)
  205    FORMAT(5X,'LOAD DATA FOR FOLLOWING AREAS HAS BEEN READ',/)
  220    READ(JU,350,END=550)NCAR,NAAREA
@@ -7529,7 +7023,6 @@ C       BACKSPACE 1
      *15X,'ERROR OCCURRED IN LEEI IN LINE ',I5,/)
 	IABORT=1
 	RETURN
-	
  240    CONTINUE
 	IAREA=IAREA+1
 	I=ITAG
@@ -7540,60 +7033,46 @@ C       WRITE(*,*)I,IAREA
 	IF((IY1.NE.1).AND.(IY2.NE.1))GO TO 560
 	BACKSPACE JU
 	LLINE=LLINE-1
-	
  351    FORMAT(2I2)
- 
 	DO 300 J=1,730
-	  K1=(J-1)*12+1
-	  K2=K1+11
-	  LLINE=LLINE+1
-	  READ(JU,352,ERR=510,END=510)IY1,IY2,IY3,(IRLOAD(K),K=1,12)
-	  K3=0
-	  DO 310 K=K1,K2
-	    K3=K3+1
-	    HRLOAD(I,K)=IRLOAD(K3)
-310   CONTINUE
-300 CONTINUE
-
+	K1=(J-1)*12+1
+	K2=K1+11
+	LLINE=LLINE+1
+	READ(JU,352,ERR=510,END=510)IY1,IY2,IY3,(IRLOAD(K),K=1,12)
+	K3=0
+	DO 310 K=K1,K2
+	K3=K3+1
+	HRLOAD(I,K)=IRLOAD(K3)
+310     CONTINUE
+300     CONTINUE
 	GO TO 220
-	
-352    FORMAT(3I2,14X,12I5)
+ 352    FORMAT(3I2,14X,12I5)
 350     FORMAT(A4,1X,A4)
 353     FORMAT(5X,A4,1X,A4)
-710    CONTINUE
- 
+ 710    CONTINUE
 	DO 400 I=1,NOAREA
-	  XMAX=0.
-	  
-	  DO 500 J=1,8760
-	    IF(HRLOAD(I,J).GT.XMAX)XMAX=HRLOAD(I,J)
-500   CONTINUE
-	  
-	  IF(XMAX.LT..001) XMAX=.001
-	  
-	  DO 600 J=1,8760
-	    HRLOAD(I,J)=HRLOAD(I,J)/XMAX
-
-600   CONTINUE
-400 CONTINUE
-
+	XMAX=0.
+	DO 500 J=1,8760
+	IF(HRLOAD(I,J).GT.XMAX)XMAX=HRLOAD(I,J)
+500     CONTINUE
+	IF(XMAX.LT..001)XMAX=.001
+	DO 600 J=1,8760
+	HRLOAD(I,J)=HRLOAD(I,J)/XMAX
+600     CONTINUE
+400     CONTINUE
 	DO 700 I=1,NOAREA
-	  DO 800 J=1,8760
-	    HRLOAD(I,J)=HRLOAD(I,J)*PKLOAD(I)
-800   CONTINUE
-700 CONTINUE
-
-	RETURN 
-	
+	DO 800 J=1,8760
+	HRLOAD(I,J)=HRLOAD(I,J)*PKLOAD(I)
+800     CONTINUE
+700     CONTINUE
+	RETURN
  510    CONTINUE
 	WRITE(*,520)LLINE
  520    FORMAT(15X,'UNEXPECTED TYPE OR END OF DATA',/,
      *  15X,'PROGRAM ABORTED',/,
      *  15X,'ERROR OCCURRED IN LEEI IN LINE ',I5,/)
 	IABORT=1
-	
 	 RETURN
-	 
  550    CONTINUE
 	IF(IAREA.EQ.NOAREA)GO TO 710
 	WRITE(*,555)LLINE,IAREA
@@ -7603,7 +7082,6 @@ C       WRITE(*,*)I,IAREA
      *  15X,'NUMBER OF AREAS ALREADY IDENTIFIED ',I5,/)
 	IABORT=1
 	RETURN
-	
  560    CONTINUE
 	WRITE(*,565)NAAREA,LLINE
  565    FORMAT(15X,'BEGINNING OF ',A4,' DATA NOT JAN 1',
@@ -7612,141 +7090,155 @@ C       WRITE(*,*)I,IAREA
 	IABORT=1
 	RETURN
 	END
+	SUBROUTINE XLDPU(JU)
+      INCLUDE 'NARPERC.txt'
+	DIMENSION XRLOAD(8)
+	DO 210 I=1,15
+	DO 215 J=1,8760
+	HRLOAD(I,J)=0.
+ 215    CONTINUE
+ 210    CONTINUE
+	DO 200 I=1,NOAREA
+	READ(JU,350)XIND1
+	IF(XIND1.EQ.0.)GO TO 205
+	BACKSPACE JU
+	DO 300 J=1,1095
+	K1=(J-1)*8+1
+	K2=K1+7
+	READ(JU,350)(XRLOAD(K),K=1,8)
+	K3=0
+	DO 310 K=K1,K2
+	K3=K3+1
+	HRLOAD(I,K)=XRLOAD(K3)
+310     CONTINUE
+300     CONTINUE
+205     CONTINUE
+200     CONTINUE
+350     FORMAT(8F10.0)
+C        DO 400 I=1,NOAREA
+C        XMAX=0.
+C        DO 500 J=1,8760
+C        IF(HRLOAD(I,J).GT.XMAX)XMAX=HRLOAD(I,J)
+C500     CONTINUE
+C        IF(XMAX.LT..001)XMAX=.001
+C        DO 600 J=1,8760
+C        HRLOAD(I,J)=HRLOAD(I,J)/XMAX
+C600     CONTINUE
+C400     CONTINUE
+	DO 700 I=1,NOAREA
+	DO 800 J=1,8760
+	HRLOAD(I,J)=HRLOAD(I,J)*PKLOAD(I)
+800     CONTINUE
+700     CONTINUE
+	RETURN
+	END
 
-	
-	
-	
 	SUBROUTINE SMAINT
-    INCLUDE 'NARPERC.txt'
+      INCLUDE 'NARPERC.txt'
 	IA=0
- 25 IA=IA+1
+ 25     IA=IA+1
 	IF(IA.GT.NOAREA)GO TO 115
 	CALL PMSC(IA)
 	GO TO 25
- 115 CONTINUE
- 
+ 115    CONTINUE
 	DO 50 I=1,52
-	  DO 50 J=1,120
+	DO 50 J=1,120
 50      JPLOUT(I,J)=0
-
 	DO 100 I=1,NUNITS
-	  IF(ID(I,4).EQ.0 GO TO 200
-	  J1=ID(I,4)
-	  J2=J1+ID(I,5)-1
-	  IF(J2.GT.52)J2=52
-	  DO 110 J=J1,J2
-	    K=JPLOUT(J,1)+1
-	    JPLOUT(J,1)=K
+	IF(ID(I,4).EQ.0)GO TO 200
+	J1=ID(I,4)
+	J2=J1+ID(I,5)-1
+	IF(J2.GT.52)J2=52
+	DO 110 J=J1,J2
+	K=JPLOUT(J,1)+1
+	JPLOUT(J,1)=K
 110     JPLOUT(J,K+1)=ID(I,1)
-
-200   CONTINUE
-
-	  IF(ID(I,6).EQ.0) GO TO 100
-	  J1=ID(I,6)
-	  J2=J1+ID(I,7)-1
-	  IF(J2.GT.52)J2=52
-	  DO 210 J=J1,J2
-	    K=JPLOUT(J,1)+1
-	    JPLOUT(J,1)=K
+200     CONTINUE
+	IF(ID(I,6).EQ.0)GO TO 100
+	J1=ID(I,6)
+	J2=J1+ID(I,7)-1
+	IF(J2.GT.52)J2=52
+	DO 210 J=J1,J2
+	K=JPLOUT(J,1)+1
+	JPLOUT(J,1)=K
 210     JPLOUT(J,K+1)=ID(I,1)
-
-100 CONTINUE
-
+100     CONTINUE
 	RETURN
 	END
 
-	
 	SUBROUTINE XPORTA
       INCLUDE 'NARPERC.txt'
 	DO 100 J1=1,NOAREA
-	  DO 200 J2=1,NOAREA
-	    IF(JENT(J1,J2).EQ.0)GO TO 200
-	    L=JENT(J1,J2)
-	    DO 300 K=1,365
-	      IF(INTCH(L,K).EQ.0)GO TO 300
-	      K1=(K-1)*24+1
-	      K2=K1+23
-	      DO 350 K3=K1,K2
-	        HRLOAD(J1,K3)=HRLOAD(J1,K3)+INTCH(L,K)
-	        HRLOAD(J2,K3)=HRLOAD(J2,K3)-INTCH(L,K)
-350       CONTINUE
+	DO 200 J2=1,NOAREA
+	IF(JENT(J1,J2).EQ.0)GO TO 200
+	L=JENT(J1,J2)
+	DO 300 K=1,365
+	IF(INTCH(L,K).EQ.0)GO TO 300
+	K1=(K-1)*24+1
+	K2=K1+23
+	DO 350 K3=K1,K2
+	HRLOAD(J1,K3)=HRLOAD(J1,K3)+INTCH(L,K)
+	HRLOAD(J2,K3)=HRLOAD(J2,K3)-INTCH(L,K)
+350     CONTINUE
 300     CONTINUE
-200   CONTINUE
-100 CONTINUE
+200     CONTINUE
+100     CONTINUE
 	RETURN
 	END
 
-	
-	
 	SUBROUTINE XPORTS
-    INCLUDE 'NARPERC.txt'
+      INCLUDE 'NARPERC.txt'
 	DO 100 J1=1,NOAREA
-	  DO 200 J2=1,NOAREA
-        IF(JENT(J1,J2).EQ.0)GO TO 200
-		L=JENT(J1,J2)
-		DO 300 K=1,365
-		  IF(INTCH(L,K).EQ.0)GO TO 300
-		  K1=(K-1)*24+1
-		  K2=K1+23
-		  DO 350 K3=K1,K2
-			HRLOAD(J1,K3)=HRLOAD(J1,K3)-INTCH(L,K)
-			HRLOAD(J2,K3)=HRLOAD(J2,K3)+INTCH(L,K)
-350       CONTINUE
+	DO 200 J2=1,NOAREA
+	IF(JENT(J1,J2).EQ.0)GO TO 200
+	L=JENT(J1,J2)
+	DO 300 K=1,365
+	IF(INTCH(L,K).EQ.0)GO TO 300
+	K1=(K-1)*24+1
+	K2=K1+23
+	DO 350 K3=K1,K2
+	HRLOAD(J1,K3)=HRLOAD(J1,K3)-INTCH(L,K)
+	HRLOAD(J2,K3)=HRLOAD(J2,K3)+INTCH(L,K)
+350     CONTINUE
 300     CONTINUE
-200   CONTINUE
-100 CONTINUE
+200     CONTINUE
+100     CONTINUE
 	RETURN
 	END
-
-
-
-
 	SUBROUTINE RESCA
 	INCLUDE 'NARPERC.txt'
 	DO 100 I=1,NOAREA
-	  IDAY=MAXDAY(I)
-	  IHR=IDAY*24
-	  IPER=1
-	  IF(IHR.LE.QTR(1))GO TO 150
-	  IPER=2
-	  IF(IHR.LE.QTR(2))GO TO 150
-	  IPER=3
-	  IF(IHR.LE.QTR(3))GO TO 150
-	  IPER=4
-	  
- 150  CONTINUE
- 
-	  DO 200 J=1,NUNITS
-	    SUSTAT(I,2)=SUSTAT(I,2)+CAPOWN(I,J)*RATES(J,IPER)
- 200  CONTINUE
+	IDAY=MAXDAY(I)
+	IHR=IDAY*24
+	IPER=1
+	IF(IHR.LE.QTR(1))GO TO 150
+	IPER=2
+	IF(IHR.LE.QTR(2))GO TO 150
+	IPER=3
+	IF(IHR.LE.QTR(3))GO TO 150
+	IPER=4
+ 150    CONTINUE
+	DO 200 J=1,NUNITS
+	SUSTAT(I,2)=SUSTAT(I,2)+CAPOWN(I,J)*RATES(J,IPER)
+ 200    CONTINUE
 C       WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
-
-	  DO 250 J1=1,NOAREA
-	  
-	    IF(JENT(I,J1).EQ.0)GO TO 260
-	      IP=JENT(I,J1)
-	      SUSTAT(I,2)=SUSTAT(I,2)-INTCH(IP,IDAY)
-C         WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
+	DO 250 J1=1,NOAREA
+	IF(JENT(I,J1).EQ.0)GO TO 260
+	IP=JENT(I,J1)
+	SUSTAT(I,2)=SUSTAT(I,2)-INTCH(IP,IDAY)
+C       WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
  260    CONTINUE
- 
-	    IF(JENT(J1,I).EQ.0)GO TO 270
-C         WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
-	      IP=JENT(J1,I)
-	      SUSTAT(I,2)=SUSTAT(I,2)+INTCH(IP,IDAY)
- 270    CONTINUE
- 
+	IF(JENT(J1,I).EQ.0)GO TO 270
 C       WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
- 250  CONTINUE
- 
-C     WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
- 100 CONTINUE
- 
+	IP=JENT(J1,I)
+	SUSTAT(I,2)=SUSTAT(I,2)+INTCH(IP,IDAY)
+ 270    CONTINUE
+C       WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
+ 250    CONTINUE
+C       WRITE(*,*)SUSTAT(I,2),SUSTAT(I,1)
+ 100    CONTINUE
 	RETURN
 	END
-
-
-
-
 C***********************************************************************
 C
 C        THIS SUBROUTINE IS FOR AUTOMATIC SCHEDULING OF PLANNED
@@ -7797,50 +7289,42 @@ C  ADDED TO DEFINE WRITE TO SCREEN IN PMSC ... GENE P. 1/26/89
       INUO=500
       INPO=150
       N=1
-	  
       DO 1100 I=1,INUO
-        INDEX(I,1)=0
-        INDEX(I,2)=0
-        INDEX1(I)=0
-        P(I)=1.0
+      INDEX(I,1)=0
+      INDEX(I,2)=0
+      INDEX1(I)=0
+      P(I)=1.0
 1100  CONTINUE
-
 	NGU=0
 	DO 13 I=1,NUNITS
-	  IF(ID(I,3).NE.IA)GO TO 13
-	  
-	  NGU=NGU+1
-	  IF(ID(I,2).GT.N) N=ID(I,2)
-	  NR0(NGU)=ID(I,1)
-	  ID1(NGU,1)=NGU
-	  
-	  DO 15 J=2,8
+	IF(ID(I,3).NE.IA)GO TO 13
+	NGU=NGU+1
+	IF(ID(I,2).GT.N)N=ID(I,2)
+	NR0(NGU)=ID(I,1)
+	ID1(NGU,1)=NGU
+	DO 15 J=2,8
  15     ID1(NGU,J)=ID(I,J)
- 
-	  NU1=RATES(I,1)
-	  NU2=RATES(I,2)
-	  NU3=RATES(I,3)
-	  NU4=RATES(I,4)
-	  CAPLOS(NGU)=MAX0(NU1,NU2,NU3,NU4)
+	NU1=RATES(I,1)
+	NU2=RATES(I,2)
+	NU3=RATES(I,3)
+	NU4=RATES(I,4)
+	CAPLOS(NGU)=MAX0(NU1,NU2,NU3,NU4)
 C       SUSTAT(IA,2)=SUSTAT(IA,2)+CAPLOS(NGU)
-
-	  RD(NGU,2)=1.-PROBG(I,2)
-	  RD(NGU,1)=PROBG(I,2)-PROBG(I,1)
-	  RD(NGU,3)=1-DERATE(I)
+	RD(NGU,2)=1.-PROBG(I,2)
+	RD(NGU,1)=PROBG(I,2)-PROBG(I,1)
+	RD(NGU,3)=1-DERATE(I)
 C        WRITE(JU1,*)NGU,CAPLOS(NGU)
  13     CONTINUE
- 
-      IF(NGU.EQ.0) GO TO 199
+      IF(NGU.EQ.0)GO TO 199
       DO 1150 I=1,NGU
-        DURLOS(I,1)=ID1(I,5)
-        DURLOS(I,2)=ID1(I,7)
-        ID1(I,4)=ID1(I,4)*168 - 168
-        ID1(I,5)=ID1(I,5)*168
-        ID1(I,6)=ID1(I,6)*168 - 168
-        ID1(I,7)=ID1(I,7)*168
-        LOCREW(I)=ID1(I,2)
+      DURLOS(I,1)=ID1(I,5)
+      DURLOS(I,2)=ID1(I,7)
+      ID1(I,4)=ID1(I,4)*168 - 168
+      ID1(I,5)=ID1(I,5)*168
+      ID1(I,6)=ID1(I,6)*168 - 168
+      ID1(I,7)=ID1(I,7)*168
+      LOCREW(I)=ID1(I,2)
 1150  CONTINUE
-
 C
 C        READ :
 C
@@ -7856,9 +7340,8 @@ C                 >1 IF DAFOR IS USED
 C
       CAP=0.
       DO 1110 I=1,NGU
-        CAP=CAP+CAPLOS(I)
+      CAP=CAP+CAPLOS(I)
  1110 CONTINUE
- 
 C      WRITE(JU1,*)CAP
       CAP1=CAP/20
       CAP2=CAP/5
@@ -7871,94 +7354,80 @@ C        THE UNITS ARE ARRANGED IN THE DESCENDING ORDER OF
 C        (CAPACITY*PLANNED MAINTENANCE DURATION)
 C
       DO 500 I=1,N
-515     IC=0
-        CMAX=-5.0
-	  
-        DO 510 J=1,M
-          IF(ID1(J,2).NE.I)GO TO 510
-          IC=1
-          IDUR1=DURLOS(J,1)
-          IDUR2=DURLOS(J,2)
-          IDUR=MAX0(IDUR1,IDUR2)
-          CDUR=CAPLOS(J)*IDUR
-          IF(CDUR.GT.CMAX)JT=J
-          IF(CDUR.GT.CMAX)CMAX=CDUR
-510     CONTINUE
-
-        IF(IC.EQ.0)GO TO 500
-		
-        I1=I1+1
-	  
-        DO 520 J=1,8
-520       IDT(I1,J)=ID1(JT,J)
-
-        ID1(JT,2)=0
-        DO 530 J=1,3
-530       RDT(I1,J)=RD(JT,J)
-
-        CAPLO(I1)=CAPLOS(JT)
-        DURLO(I1,1)=DURLOS(JT,1)
-        DURLO(I1,2)=DURLOS(JT,2)
-        LOCRE(I1)=LOCREW(JT)
-        GO TO 515
-	  
+515   IC=0
+      CMAX=-5.0
+      DO 510 J=1,M
+      IF(ID1(J,2).NE.I)GO TO 510
+      IC=1
+      IDUR1=DURLOS(J,1)
+      IDUR2=DURLOS(J,2)
+      IDUR=MAX0(IDUR1,IDUR2)
+      CDUR=CAPLOS(J)*IDUR
+      IF(CDUR.GT.CMAX)JT=J
+      IF(CDUR.GT.CMAX)CMAX=CDUR
+510   CONTINUE
+      IF(IC.EQ.0)GO TO 500
+      I1=I1+1
+      DO 520 J=1,8
+520   IDT(I1,J)=ID1(JT,J)
+      ID1(JT,2)=0
+      DO 530 J=1,3
+530   RDT(I1,J)=RD(JT,J)
+      CAPLO(I1)=CAPLOS(JT)
+      DURLO(I1,1)=DURLOS(JT,1)
+      DURLO(I1,2)=DURLOS(JT,2)
+      LOCRE(I1)=LOCREW(JT)
+      GO TO 515
 500   CONTINUE
-
       DO 640 I1=1,M
-        DO 620 J=1,8
-620       ID1(I1,J)=IDT(I1,J)
-        DO 630 J=1,3
-630       RD(I1,J)=RDT(I1,J)
-
-        CAPLOS(I1)=CAPLO(I1)
-        DURLOS(I1,1)=DURLO(I1,1)
-        DURLOS(I1,2)=DURLO(I1,2)
-        LOCREW(I1)=LOCRE(I1)
+      DO 620 J=1,8
+620   ID1(I1,J)=IDT(I1,J)
+      DO 630 J=1,3
+630   RD(I1,J)=RDT(I1,J)
+      CAPLOS(I1)=CAPLO(I1)
+      DURLOS(I1,1)=DURLO(I1,1)
+      DURLOS(I1,2)=DURLO(I1,2)
+      LOCREW(I1)=LOCRE(I1)
 640   CONTINUE
-
       ID1(M+1,1)=2000
-	  
 C
 C        CALL SUBROUTINE PMLOLP TO CREATE CAPACITY OUTAGE PROBABILITY
 C        TABLE
 C
 C  KA AND PA PASSED THROUGH COMMON BLOCK .... GENE P. 1/26/89
       CALL PMLOLP(CAPLOS,RD,NGU,P,NGS)
-	  
 C
 C        CALCULATE M FACTOR ,IE, THE SLOPE OF CAPACITY OUTAGE PROBABILIT
 C        TABLE
 C
 C      DO 641 I=1,M
-C        WRITE(JU1,*)CAPLOS(I),RD(I,1),RD(I,2),LOCREW(I),DURLOS(I,1),
+C      WRITE(JU1,*)CAPLOS(I),RD(I,1),RD(I,2),LOCREW(I),DURLOS(I,1),
 C    *DURLOS(I,2),ID1(I,5),ID1(I,7),MAXRAN(IA),MINRAN(IA),INHBT1(IA),
 C    *INHBT2(IA),ID1(I,8)
 C 641  CONTINUE
 C     DO 301 IX=1,NGS
-C       WRITE(JU1,*)KA(IX),PA(IX)
+C      WRITE(JU1,*)KA(IX),PA(IX)
 C301  CONTINUE
 
       DO 400 I=1,NGS
-        IF(KA(I).GE.CAP1)GO TO 410
+      IF(KA(I).GE.CAP1)GO TO 410
  400  CONTINUE
- 
  410  UL=PA(I)
       CAP1=KA(I)
       DO 420 I=1,NGS
-        IF(KA(I).GE.CAP2)GO TO 430
+      IF(KA(I).GE.CAP2)GO TO 430
  420  CONTINUE
- 
  430  XLL=PA(I)
       CAP2=KA(I)
-C     WRITE(JU1,*)CAP1,CAP2,XLL,UL
+C      WRITE(JU1,*)CAP1,CAP2,XLL,UL
       XM=5000
       IF(XLL.LT..0000001)GO TO 431
       DENOM=ALOG(UL/XLL)
       IF(DENOM.LT..0000001)GO TO 431
       XM=(CAP2-CAP1)/DENOM
  431  CONTINUE
-C     WRITE(JU1,4)XM
-C4    FORMAT(10X,'M FACTOR =',F6.2,//)
+C      WRITE(JU1,4)XM
+C4     FORMAT(10X,'M FACTOR =',F6.2,//)
 
 C
 C      READ SCHEDULED LOSS, DURATION LOSS, PREVIOUS MAINT.
@@ -7971,104 +7440,87 @@ C      X DURATION
 C
 C
       DO 3 I=1,52
-   3    WEEKS(I)=B
+   3  WEEKS(I)=B
 C
       DO 39 I=1,52
-        DO 39 II=1,INPO
-   39     CHECK(II,I)=0.
+      DO 39 II=1,INPO
+   39 CHECK(II,I)=0.
 C
       DO 7 I=1,52
-        LOAD(I)=WPEAK(IA,I)
+      LOAD(I)=WPEAK(IA,I)
 7     CONTINUE
-      
-	  DO 6 I=1,52
-        EFLOAD(I)=LOAD(I)
+      DO 6 I=1,52
+      EFLOAD(I)=LOAD(I)
     6 CONTINUE
 C
       DO 5 I=1,N
-        MWTOT(I)=0
-        DO 5 J=1,M
-    5     MWEEK(J)=0
-	
+      MWTOT(I)=0
+      DO 5 J=1,M
+    5 MWEEK(J)=0
       IF(IREPM.EQ.0)GO TO 61
       WRITE(JU1,178)
  178  FORMAT('1',10(/),5X,' WEEKLY PEAK LOAD BEFORE MAINTENANCE SCHEDULI
      *NG',/)
       WRITE(JU1,290)(LOAD(I),I=1,52)
  61   CONTINUE
- 
       NPS=0
       DO 436 I=1,M
-        IF(ID1(I,8).EQ.0)GO TO 436
-        NPS=NPS+1
-        NPSU(NPS)=ID1(I,1)
+      IF(ID1(I,8).EQ.0)GO TO 436
+      NPS=NPS+1
+      NPSU(NPS)=ID1(I,1)
  436  CONTINUE
- 
       I=0
       LTEM=0
-	  
       DO 52 J=1,M
-        R=(1-P(J)+P(J)*EXP(CAPLOS(J)/XM  ))
-        SCHLOS(J)=CAPLOS(J)-XM *ALOG(R)
-        IF(SCHLOS(J).LE.0)SCHLOS(J)=CAPLOS(J)
-		
-C       WRITE(JU1,*)SCHLOS(J)
+      R=(1-P(J)+P(J)*EXP(CAPLOS(J)/XM  ))
+      SCHLOS(J)=CAPLOS(J)-XM *ALOG(R)
+      IF(SCHLOS(J).LE.0)SCHLOS(J)=CAPLOS(J)
+C      WRITE(JU1,*)SCHLOS(J)
       IF(LTEM.EQ.LOCREW(J)) GO TO 10
       I=I+1
       LTEM=LOCREW(J)
       MWTOT(I)=0
       MWI(I)=LOCREW(J)
 10    CONTINUE
-
 C      WRITE(JU,444)NPS
 C444   FORMAT(10X,'NPS=',I3)
-
       IF(NPS.EQ.0) GO TO 11
       DO 450 II=1,NPS
-        IN1=NPSU(II)
-        IF(ID1(J,1).EQ.IN1)GO TO 460
+      IN1=NPSU(II)
+      IF(ID1(J,1).EQ.IN1)GO TO 460
 450   CONTINUE
       GO TO 11
  460  CONTINUE
- 
       IF(ID1(J,4).EQ.0.AND.ID1(J,5).EQ.0)GO TO 461
 C      WRITE(JU,*)ID(J,5),DURLOS(J,1)
-        M1=ID1(J,4)/168+1
-        M2=M1+DURLOS(J,1)-1
-        IPN=I
-	  
-        IF(M2.GT.52)M2=52
-	  
-        IF(M2.EQ.0)GO TO 471
-      
-	      DO 470 J2=M1,M2
-            CHECK(IPN,J2)=LOCREW(J)
-            EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
-            LOAD(J2)=LOAD(J2)+CAPLOS(J)
-470       CONTINUE
-
-          INDEX(J,1)=M1
+      M1=ID1(J,4)/168+1
+      M2=M1+DURLOS(J,1)-1
+      IPN=I
+      IF(M2.GT.52)M2=52
+      IF(M2.EQ.0)GO TO 471
+      DO 470 J2=M1,M2
+      CHECK(IPN,J2)=LOCREW(J)
+      EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
+      LOAD(J2)=LOAD(J2)+CAPLOS(J)
+470   CONTINUE
+      INDEX(J,1)=M1
  461  CONTINUE
-        INDEX1(J)=1
+      INDEX1(J)=1
  471  CONTINUE
- 
       IF(ID1(J,6).EQ.0.AND.ID1(J,7).EQ.0)GO TO 462
       M3=ID1(J,6)/168+1
       M4=M3+DURLOS(J,2)-1
       IF(M4.GT.52)M4=52
       IF(M4.EQ.0)GO TO 462
-        DO 475 J2=M3,M4
-          CHECK(IPN,J2)=LOCREW(J)
-          EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
-          LOAD(J2)=LOAD(J2)+CAPLOS(J)
- 475    CONTINUE
-        INDEX(J,2)=M3
-	  
+      DO 475 J2=M3,M4
+      CHECK(IPN,J2)=LOCREW(J)
+      EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
+      LOAD(J2)=LOAD(J2)+CAPLOS(J)
+ 475  CONTINUE
+      INDEX(J,2)=M3
  462  CONTINUE
       GO TO 52
-	  
 11    CONTINUE
-
       MWEEK(J)=SCHLOS(J)*(DURLOS(J,1)+DURLOS(J,2))
       MWTOT(I)=MWTOT(I)+MWEEK(J)
    52 CONTINUE
@@ -8109,66 +7561,54 @@ C
       WRITE(JU1,809)
       WRITE(JU1,801)
       WRITE(JU1,804)
-	  
  62   CONTINUE
 C
 C
 C      SCHEDULE FIRST THE PLANT WITH THE LARGEST TOTAL
 C      SCHEDULE MW LOSS X DURATION .
-C      FIND THE LARGEST MWTOT(I)
+C      FIND YHE LARGEST MWTOT(I)
 C
 C
       I=N
       DO 89 LM=1,N
-        MAX1=0
-		
-        DO 14 K=1,N
-          IF(MAX1.GE.MWTOT(K))GO TO 14
-            MAX1=MWTOT(K)
-            I=K
-   14   CONTINUE
+      MAX1=0
+      DO 14 K=1,N
+      IF(MAX1.GE.MWTOT(K))GO TO 14
+      MAX1=MWTOT(K)
+      I=K
+   14 CONTINUE
 C
-C       CREATE MWEEK(J)
+C      CREATE MWEEK(J)
 C
-        K1=MWI(I)
-		
-        DO 300 K2=1,INUO
- 300      MWEEK(K2)=0
-	    
-		DO 310 K2=1,M
-          IF(ID1(K2,2).NE.K1)GO TO 310
-            MWEEK(K2)=SCHLOS(K2)*(DURLOS(K2,1)+DURLOS(K2,2))
- 310    CONTINUE
- 
+      K1=MWI(I)
+      DO 300 K2=1,INUO
+ 300  MWEEK(K2)=0
+      DO 310 K2=1,M
+      IF(ID1(K2,2).NE.K1)GO TO 310
+      MWEEK(K2)=SCHLOS(K2)*(DURLOS(K2,1)+DURLOS(K2,2))
+ 310  CONTINUE
 C       WRITE(JU1,*)N,M,I
-C       WRITE(JU1,*)(MWEEK(K4),K4=1,M)
-C       CLEAR THE MWTOT(I), SINCE NO LONGER REQUIRED .
-
-        IF(MWTOT(I).EQ.0)GO TO 89
-        
-		MWTOT(I)=0
-		
+C      WRITE(JU1,*)(MWEEK(K4),K4=1,M)
+C      CLEAR THE MWTOT(I), SINCE NO LONGER REQUIRED .
+      IF(MWTOT(I).EQ.0)GO TO 89
+      MWTOT(I)=0
 C      SET THE INDEX FOR MWEEK(J), J=N1,N2
-        N1=1
-        N2=0
-        DO 16 J=1,M
-          IF(MWEEK(J).NE.0) N2=J
-          IF(MWEEK(J).EQ.0.AND.N2.EQ.0) N1=N1+1
-   16   CONTINUE
-   
+      N1=1
+      N2=0
+      DO 16 J=1,M
+      IF(MWEEK(J).NE.0)N2=J
+      IF(MWEEK(J).EQ.0.AND.N2.EQ.0)N1=N1+1
+   16 CONTINUE
 C      SCHEDULE ALL GENERATORS WITHIN THE SAME PLANT
-   18 CONTINUE 
-   
+   18 CONTINUE
       DO 30 JA=N1,N2
-        J=JA
-        J4=JA
-		
+      J=JA
+      J4=JA
 C
 C      SET INDEX FOR SCHEDULING WITHIN THE FLEXIBLE MAINTENANCE
 C      PERIOD, BETWEEN MIN. AND MAX. RANGE .
 
       IF(MWEEK(JA).EQ.0)GO TO 30
-	  
  191  MT=0
       IMT=0
       I5=2
@@ -8178,18 +7618,14 @@ C      PERIOD, BETWEEN MIN. AND MAX. RANGE .
       IF(DURLOS(J,2).GT.DURL)DURL=DURLOS(J,2)
       MAXR=MAXRAN(IA)
       MINR=MINRAN(IA)
-	  
-      IF(I5.EQ.0) GO TO 19
-	  
-        IF(I5.EQ.2) GO TO 41
-          MAXRAN(IA)=INHBT1(IA)
-          GO TO 42
- 41     CONTINUE
-          MINRAN(IA)=INHBT2(IA)
- 42     CONTINUE
- 
+      IF(I5.EQ.0)GO TO 19
+      IF(I5.EQ.2)GO TO 41
+      MAXRAN(IA)=INHBT1(IA)
+      GO TO 42
+ 41   CONTINUE
+      MINRAN(IA)=INHBT2(IA)
+ 42   CONTINUE
    19 I1=MINRAN(IA)
-   
       IM=DURL-1
       IT=MAXRAN(IA)-IM
       IX=53-DURL
@@ -8197,47 +7633,39 @@ C      PERIOD, BETWEEN MIN. AND MAX. RANGE .
       IF(IX.GT.IT)IX=IT
       ITE=10**6
       IC=0
-	  
       DO 22 J1=I1,IX
-        IR=SCHLOS(J)
-        IS=J1+IM
-        IF(J1.GE.(INHBT1(IA)-IM).AND.IS.LE.(INHBT2(IA)+IM))GO TO 22
-        IF(LOCREW(J).EQ.CHECK(I,J1).OR.LOCREW(J).EQ.CHECK(I,IS))GO TO 22
-        DO 21 L=J1,IS
-          IF((IR+EFLOAD(L)).GE.G)GO TO 22
-   21   CONTINUE
-   
-        DO 20 L=J1,IS
-          IC=1
-   20     IR=IR+EFLOAD(L)
-   
-        IF(ITE.LT.IR)GO TO 22
-        ITE=IR
-        M1=J1
+      IR=SCHLOS(J)
+      IS=J1+IM
+      IF(J1.GE.(INHBT1(IA)-IM).AND.IS.LE.(INHBT2(IA)+IM))GO TO 22
+      IF(LOCREW(J).EQ.CHECK(I,J1).OR.LOCREW(J).EQ.CHECK(I,IS))GO TO 22
+      DO 21 L=J1,IS
+      IF((IR+EFLOAD(L)).GE.G)GO TO 22
+   21 CONTINUE
+      DO 20 L=J1,IS
+      IC=1
+   20 IR=IR+EFLOAD(L)
+      IF(ITE.LT.IR)GO TO 22
+      ITE=IR
+      M1=J1
    22 CONTINUE
-   
       MAXRAN(IA)=MAXR
       MINRAN(IA)=MINR
-	  
       IF(I5.EQ.0)GO TO 43
-        I6=I5
-        IC=0
-        MT=M1
-        IMT=IM
-        DURL=DURLOS(J,1)
-        IF(DURLOS(J,2).LE.DURL)DURL=DURLOS(J,2)
-        IF(I5.EQ.2)GO TO 45
-          MINRAN(IA)=INHBT2(IA)
-          GO TO 46
- 45     CONTINUE
-          MAXRAN(IA)=INHBT1(IA)
- 46     CONTINUE
- 
-        I5=0
-        GO TO 19
-		
+      I6=I5
+      IC=0
+      MT=M1
+      IMT=IM
+      DURL=DURLOS(J,1)
+      IF(DURLOS(J,2).LE.DURL)DURL=DURLOS(J,2)
+      IF(I5.EQ.2)GO TO 45
+      MINRAN(IA)=INHBT2(IA)
+      GO TO 46
+ 45   CONTINUE
+      MAXRAN(IA)=INHBT1(IA)
+ 46   CONTINUE
+      I5=0
+      GO TO 19
  43   CONTINUE
- 
 C
 C      IC IS THE INDEX TO CHECK WHETHER THE SCHEDULE IS FEASIBLE .
 C
@@ -8267,34 +7695,26 @@ C      NON-FEASIBLE ONE. INTERCHANGE ORDER OF THE SCHEDULING.
 C
    25 IF(MWEEK(J4).EQ.0)GO TO 24
       IF(INDEX(J4,1).EQ.0.AND.INDEX(J4,2).EQ.0)GO TO 24
-	  
       IF(INDEX(J4,1).EQ.0)GO TO 124
-	  
       NC1=INDEX(J4,1)
       NC2=NC1+DURLOS(J4,1)-1
-	  
       DO 26 J2=NC1,NC2
-        CHECK(I,J2)=0
-        LOAD(J2)=LOAD(J2)-CAPLOS(J4)
-        EFLOAD(J2)=EFLOAD(J2)-SCHLOS(J4)
-   26   WEEKS(J2)=B
-   
+      CHECK(I,J2)=0
+      LOAD(J2)=LOAD(J2)-CAPLOS(J4)
+      EFLOAD(J2)=EFLOAD(J2)-SCHLOS(J4)
+   26 WEEKS(J2)=B
       INDEX(J4,1)=0
  124  CONTINUE
- 
       IF(INDEX(J4,2).EQ.0)GO TO 191
-	  
       NC1=INDEX(J4,2)
       NC2=NC1+DURLOS(J4,2)-1
       DO 126 J2=NC1,NC2
-        CHECK(I,J2)=0
-        LOAD(J2)=LOAD(J2)-CAPLOS(J4)
-        EFLOAD(J2)=EFLOAD(J2)-SCHLOS(J4)
-  126   WEEKS(J2)=B
+      CHECK(I,J2)=0
+      LOAD(J2)=LOAD(J2)-CAPLOS(J4)
+      EFLOAD(J2)=EFLOAD(J2)-SCHLOS(J4)
+  126 WEEKS(J2)=B
       INDEX(J4,2)=0
-	  
       GO TO 191
-	  
 C
 C      ARRAY INDEX(J) IS THE STARTING SCHEDULED MAINTENANCE WEEK
 C      FOR GENERATOR J .
@@ -8316,111 +7736,93 @@ C      FOR GENERATOR J .
       ID1(J,4)=(M3-1)*168
       INDEX1(J)=0
       M2=M3+IM3
-	  
       IF(M2.LT.M3)GO TO 149
       IF(M3.EQ.0)GO TO 149
       DO 28 J2=M3,M2
-        CHECK(I,J2)=LOCREW(J)
-        EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
-   28   LOAD(J2)=LOAD(J2)+CAPLOS(J)
-   
+      CHECK(I,J2)=LOCREW(J)
+      EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
+   28 LOAD(J2)=LOAD(J2)+CAPLOS(J)
 C      WRITE(JU1,3311)M3,M2,J
 C3311 FORMAT(10X,'M1=',I4,5X,'M2=',I4,5X,'J=',I4)
-
  149  CONTINUE
- 
       INDEX(J,2)=M4
       ID1(J,6)=(M4-1)*168
       M2=M4+IM4
       IF(M2.LT.M4)GO TO 29
       IF(M4.EQ.0)GO TO 29
-	  
 C     WRITE(JU1,*)M4,M2
-
       DO 51 J2=M4,M2
-        CHECK(I,J2)=LOCREW(J)
-        EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
- 51     LOAD(J2)=LOAD(J2)+CAPLOS(J)
- 
+      CHECK(I,J2)=LOCREW(J)
+      EFLOAD(J2)=EFLOAD(J2)+SCHLOS(J)
+ 51   LOAD(J2)=LOAD(J2)+CAPLOS(J)
 C     WRITE(JU1,*)M4,M2,J4,JA
-
    29 J4=J4+1
       IF(J4.GT.JA)GO TO 30
       J=J-1
       IF(MWEEK(J).EQ.0)GO TO 29
-	  
       GO TO 19
-	  
    30 CONTINUE
    89 CONTINUE
-   
 C
 C      PRINT OUTPUT OF THE SCHEDULED GENERATORS OF THE PLANT
 C
       NTI=0
       NMAX=40
       DO 31 I=1,M
-        JB=I
-        IF(INDEX(JB,1).EQ.0.AND.INDEX(JB,2).EQ.0)GO TO 31
-        IF(INDEX(JB,1).EQ.0)GO TO 311
-        MC1=INDEX(JB,1)
-        MC2=MC1+DURLOS(JB,1)-1
-        IF(MC2.GT.52)MC2=52
-	  
-        DO 40 L=MC1,MC2
-          WEEKS(L)=A
-          IF(INDEX1(JB).EQ.0)GO TO 40
-          WEEKS(L)=AB
-   40   CONTINUE
-   
- 311    CONTINUE
-        IF(INDEX(JB,2).EQ.0)GO TO 312
-        MC1=INDEX(JB,2)
-        MC2=MC1+DURLOS(JB,2)-1
-		
-        IF(MC2.GT.52)MC2=52
-        DO 144 L=MC1,MC2
-          WEEKS(L)=A
-          IF(INDEX1(JB).EQ.0)GO TO 144
-          WEEKS(L)=AB
- 144    CONTINUE
- 
- 312    CONTINUE
-        IU0=ID1(JB,1)
-        IP0=ID1(JB,2)
-        IU0=NR0(IU0)
-        IF(IREPM.EQ.0)GO TO 64
-        WRITE(JU1,85)NAMU(IU0),NUMP(IU0),CAPLOS(JB),(WEEKS(KL),KL=1,52)
-   85   FORMAT(2X,'|',A4,A2,'|',1X,I4,1X,'|',4(13A2,'|'))
- 64     CONTINUE
-        DO 87 L=1,52
-   87     WEEKS(L)=B
+      JB=I
+      IF(INDEX(JB,1).EQ.0.AND.INDEX(JB,2).EQ.0)GO TO 31
+      IF(INDEX(JB,1).EQ.0)GO TO 311
+      MC1=INDEX(JB,1)
+      MC2=MC1+DURLOS(JB,1)-1
+      IF(MC2.GT.52)MC2=52
+      DO 40 L=MC1,MC2
+      WEEKS(L)=A
+      IF(INDEX1(JB).EQ.0)GO TO 40
+      WEEKS(L)=AB
+   40 CONTINUE
+ 311  CONTINUE
+      IF(INDEX(JB,2).EQ.0)GO TO 312
+      MC1=INDEX(JB,2)
+      MC2=MC1+DURLOS(JB,2)-1
+      IF(MC2.GT.52)MC2=52
+      DO 144 L=MC1,MC2
+      WEEKS(L)=A
+      IF(INDEX1(JB).EQ.0)GO TO 144
+      WEEKS(L)=AB
+ 144  CONTINUE
+ 312  CONTINUE
+      IU0=ID1(JB,1)
+      IP0=ID1(JB,2)
+      IU0=NR0(IU0)
+      IF(IREPM.EQ.0)GO TO 64
+      WRITE(JU1,85)NAMU(IU0),NUMP(IU0),CAPLOS(JB),(WEEKS(KL),KL=1,52)
+   85 FORMAT(2X,'|',A4,A2,'|',1X,I4,1X,'|',4(13A2,'|'))
+ 64   CONTINUE
+      DO 87 L=1,52
+   87 WEEKS(L)=B
 C
 C
-        NTI=NTI+1
-        IF(NTI.LE.NMAX)GO TO 31
-        NMAX=NMAX+40
-        IF(IREPM.EQ.0)GO TO 65
-        
-		WRITE(JU1,804)
-        WRITE(JU1,801)
-        WRITE(JU1,190)ITC
-        WRITE(JU1,801)
-        WRITE(JU1,802)
-        WRITE(JU1,803)
-        WRITE(JU1,802)
-        WRITE(JU1,801)
-        WRITE(JU1,804)
-        WRITE(JU1,805)
-        WRITE(JU1,806)
-        WRITE(JU1,807)
-        WRITE(JU1,804)
-        WRITE(JU1,801)
-        WRITE(JU1,804)
-
-   65   CONTINUE
+      NTI=NTI+1
+      IF(NTI.LE.NMAX)GO TO 31
+      NMAX=NMAX+40
+      IF(IREPM.EQ.0)GO TO 65
+      WRITE(JU1,804)
+      WRITE(JU1,801)
+      WRITE(JU1,190)ITC
+      WRITE(JU1,801)
+      WRITE(JU1,802)
+      WRITE(JU1,803)
+      WRITE(JU1,802)
+      WRITE(JU1,801)
+      WRITE(JU1,804)
+      WRITE(JU1,805)
+      WRITE(JU1,806)
+      WRITE(JU1,807)
+      WRITE(JU1,804)
+      WRITE(JU1,801)
+      WRITE(JU1,804)
+   65 CONTINUE
    31 CONTINUE
-   
       IF(IREPM.EQ.0)GO TO 66
       WRITE(JU1,804)
       WRITE(JU1,801)
@@ -8434,23 +7836,18 @@ C
       WRITE(JU1,290)(LOAD(I),I=1,52)
   290 FORMAT('0', 1(/),13(2X,I6))
    66  CONTINUE
-   
       SUM=0.
       ITAB=ITC
       DO 111 I=1,NGU
-        IND=ID1(I,1)
-        IND=NR0(IND)
-        ID(IND,4)=ID1(I,4)/168+1
-        ID(IND,6)=ID1(I,6)/168+1
+      IND=ID1(I,1)
+      IND=NR0(IND)
+      ID(IND,4)=ID1(I,4)/168+1
+      ID(IND,6)=ID1(I,6)/168+1
 C      WRITE(JU1,8888)IND,I,(ID(IND,J),J=1,8)
 C8888 FORMAT(' IND =',I5,'  I =',I5,'  ID =',8I4)
  111  CONTINUE
- 
 199      RETURN
       END
-	  
-	  
-	  
 C
 C********************************************************************
 C                                                                   *
@@ -8458,9 +7855,7 @@ C        THIS SUBROUTINE COMPUTES THE CAPACITY OUTAGE PROBABILITY   *
 C        TABLE FOR COMPUTING THE M FACTOR USED IN SUBROUTINE PMSC   *
 C                                                                   *
 C********************************************************************
-C 
-C ---- Yongli 05.2022: NGS and P are never used and no outside values are given	 
-
+C
 C  KA AND PA PASSED TO SUBROUTINE THROUGH COMMON KAPA ... GENE P. 1/26/89
       SUBROUTINE PMLOLP(CAPLOS,RD,NGU,P,NGS)
       DOUBLE PRECISION PA,P1,P2,P3
@@ -8475,66 +7870,58 @@ C
       DO 2000 I=1,NGU
 C      WRITE(JU1,*)CAPLOS(I),(RD(I,J),J=1,3)
 2000  CONTINUE
-
       INC=10
       INGS=5000
       XINC=5.6
       NU=0
       CAPIND=0.
       XMGN=0.
-
       DO 5 I=1,INGS
-        KA(I)=0
-        PA(I)=0.
+      KA(I)=0
+      PA(I)=0.
     5 CONTINUE
-	
       PA(1)=1.0
       NGS=1
 C
 C        ADD UNITS TO CAPACITY OUTAGE PROBABILITY TABLE
 C
-
       DO 300 I=1,NGU
-        NT=I
+      NT=I
 C
 C        UPDATE THE SYSTEM CAPACITY UP TO THIS UNIT
 C
-        CAPIND=CAPIND+CAPLOS(NT)
-        KT=CAPLOS(NT)
-        TK=KT
-        KT=(TK+XINC-0.1)/INC
-        KT=KT*INC
-        PK=KT
+      CAPIND=CAPIND+CAPLOS(NT)
+      KT=CAPLOS(NT)
+      TK=KT
+      KT=(TK+XINC-0.1)/INC
+      KT=KT*INC
+      PK=KT
 C
 C        COMPUTE THE DERATING AND ROUND OFF TO INC
 C
-        PK=PK*RD(NT,3)
-        KP=(PK+XINC-0.1)/INC
-        KP=KP*INC
-        IU=3
-        IF(KP.EQ.0)IU=2
-        P1=0.
-        P2=0.
-        P3=0.
-        P2=RD(NT,1)
-        P3=RD(NT,2)
-        P1=1.-P2-P3
-        IRAT=P1*10**6
-        IF(IRAT.EQ.0)GO TO 303
-	   
+      PK=PK*RD(NT,3)
+      KP=(PK+XINC-0.1)/INC
+      KP=KP*INC
+      IU=3
+      IF(KP.EQ.0)IU=2
+      P1=0.
+      P2=0.
+      P3=0.
+      P2=RD(NT,1)
+      P3=RD(NT,2)
+      P1=1.-P2-P3
+      IRAT=P1*10**6
+       IF(IRAT.EQ.0)GO TO 303
 C
 C        CALL SUBROUTINE GSM FOR UNIT ADDITION TO GENERATION
 C        SYSTEM MODEL
 C
 C      WRITE(JU1,*)KT,KP,CAPLOS(NT)
 C  KA AND PA PASSED THROUGH COMMON KAPA ... GENE P. 1/26/89
-        
-		CALL GSM(NGS,KT,KP,P1,P2,P3)
-	  
-        TOTCAP=CAPIND
-303     NU=NU+1
-300 CONTINUE
-  
+      CALL GSM(NGS,KT,KP,P1,P2,P3)
+      TOTCAP=CAPIND
+303   NU=NU+1
+  300 CONTINUE
 C
 C        RETURN WHEN ALL UNITS HAVE BEEN ADDED
 C
@@ -8566,20 +7953,18 @@ C
 C        CREATE OUTAGE STATES AFTER UNIT ADDITION
 C
       DO 50 I=1,N
-		KO(I,1)=KA(I)
-		KO(I,2)=KA(I)+KP
-		KO(I,3)=KA(I)+KT
-		P(I)=PA(I)
+      KO(I,1)=KA(I)
+      KO(I,2)=KA(I)+KP
+      KO(I,3)=KA(I)+KT
+      P(I)=PA(I)
    50 CONTINUE
-   
       NN=N+1
       NNN=NN+1
-      
-	  DO 60 I=NN,NNN
-		KO(I,1)=1000000
-		KO(I,2)=1000000
-		KO(I,3)=1000000
-		P(I)=0.
+      DO 60 I=NN,NNN
+      KO(I,1)=1000000
+      KO(I,2)=1000000
+      KO(I,3)=1000000
+      P(I)=0.
    60 CONTINUE
 C
 C        SELECT OUTAGE STATES IN ASCENDING ORDER OF MAGNITUDE AND
@@ -8592,7 +7977,6 @@ C
       J3=1
       KA(L)=0
       PA(L)=1.
-	  
    70 L=L+1
       KCH=MIN0(KO(J1,1),KO(J2,2),KO(J3,3))
       KA(L)=KCH
@@ -8605,24 +7989,16 @@ C
       IF(PA(L).LE.0.1E-08) GO TO 5
       IF(L.GT.INGS1)GO TO 5
       GO TO 70
-	  
     5 N=L
-	
       IF(L.LE.INGS1)GO TO 6
-	  
       WRITE(*,130)PA(L)
  130  FORMAT(10X,'*** TO PREVENT ARRAY OVERFLOW,CUT OFF PROB. IN CAP OU
      *TAGE TABLE REDUCED TO ',E13.6)
-	 
    6  CONTINUE
-   
       NN=N+1
       PA(NN)=0.0
       RETURN
       END
-	  
-	  
-	  
       SUBROUTINE INTM
       INCLUDE 'NARPERC.txt'
       CLOSE(13)
@@ -8633,27 +8009,24 @@ C
       WRITE(15)(IGSEED(I),I=1,601)
       WRITE(15)(ILSEED(I),I=1,61)
       WRITE(15)(LT(I),I=1,20)
-      
-	  DO 10 I=1,20
-        WRITE(15)(BB(I,J),J=1,20)
-        WRITE(15)(ZB(I,J),J=1,20)
+      DO 10 I=1,20
+      WRITE(15)(BB(I,J),J=1,20)
+      WRITE(15)(ZB(I,J),J=1,20)
  10   CONTINUE
-      
-	  DO 20 I=1,15
-		  WRITE(15)(SOLTHA(I,J),J=1,5)
-		  WRITE(15)(SOLGHA(I,J),J=1,5)
-		  WRITE(15)(SOLSHA(I,J),J=1,5)
-		  WRITE(15)(SGNTHA(I,J),J=1,5)
-		  WRITE(15)(SGNGHA(I,J),J=1,5)
-		  WRITE(15)(SGNSHA(I,J),J=1,5)
-		  WRITE(15)(SOLTPA(I,J),J=1,5)
-		  WRITE(15)(SOLGPA(I,J),J=1,5)
-		  WRITE(15)(SOLSPA(I,J),J=1,5)
-		  WRITE(15)(SGNTPA(I,J),J=1,5)
-		  WRITE(15)(SGNGPA(I,J),J=1,5)
-		  WRITE(15)(SGNSPA(I,J),J=1,5)
+      DO 20 I=1,15
+      WRITE(15)(SOLTHA(I,J),J=1,5)
+      WRITE(15)(SOLGHA(I,J),J=1,5)
+      WRITE(15)(SOLSHA(I,J),J=1,5)
+      WRITE(15)(SGNTHA(I,J),J=1,5)
+      WRITE(15)(SGNGHA(I,J),J=1,5)
+      WRITE(15)(SGNSHA(I,J),J=1,5)
+      WRITE(15)(SOLTPA(I,J),J=1,5)
+      WRITE(15)(SOLGPA(I,J),J=1,5)
+      WRITE(15)(SOLSPA(I,J),J=1,5)
+      WRITE(15)(SGNTPA(I,J),J=1,5)
+      WRITE(15)(SGNGPA(I,J),J=1,5)
+      WRITE(15)(SGNSPA(I,J),J=1,5)
  20   CONTINUE
- 
       WRITE(15)(SWLSHA(I),I=1,15)
       WRITE(15)(SWLGHA(I),I=1,15)
       WRITE(15)(SWLTHA(I),I=1,15)
@@ -8685,26 +8058,21 @@ C
       WRITE(15)(DPLOLE(I,J),J=1,22)
       WRITE(15)(EUES(I,J),J=1,22)
  40   CONTINUE
- 
       DO 60 I=1,15
-        WRITE(15)(XNEWA(I,J),J=1,3)
+      WRITE(15)(XNEWA(I,J),J=1,3)
  60   CONTINUE
- 
       WRITE(15)(XNEWP(J),J=1,3)
 C  ADDED THIS LINE ... GENE PRESTON
       WRITE(15) WOLSHA
       WRITE(15)(LSFLG(J),J=1,15)
       REWIND 15
-	  
       CLOSE(15)
       RETURN
       END
 
-	  
       SUBROUTINE RSTART
       INCLUDE 'NARPERC.txt'
 C  ON FIRST READ FILE IS EMPTY AND RETURN THROUGH LINE 70 ... GENE P.
-
       OPEN(UNIT=15,FILE='DUMP',FORM='UNFORMATTED',ACCESS='SEQUENTIAL')
       READ(15,END=70)ATRIB(2),CLOCK,IPOINT,XLAST,SSQ,MFA,NUMINQ,ITAB
      *,INTVT
@@ -8712,27 +8080,24 @@ C  ON FIRST READ FILE IS EMPTY AND RETURN THROUGH LINE 70 ... GENE P.
       READ(15)(IGSEED(I),I=1,601)
       READ(15)(ILSEED(I),I=1,61)
       READ(15)(LT(I),I=1,20)
-	  
       DO 10 I=1,20
-        READ(15)(BB(I,J),J=1,20)
-        READ(15)(ZB(I,J),J=1,20)
+      READ(15)(BB(I,J),J=1,20)
+      READ(15)(ZB(I,J),J=1,20)
  10   CONTINUE
- 
       DO 20 I=1,15
-        READ(15)(SOLTHA(I,J),J=1,5)
-        READ(15)(SOLGHA(I,J),J=1,5)
-        READ(15)(SOLSHA(I,J),J=1,5)
-        READ(15)(SGNTHA(I,J),J=1,5)
-        READ(15)(SGNGHA(I,J),J=1,5)
-        READ(15)(SGNSHA(I,J),J=1,5)
-        READ(15)(SOLTPA(I,J),J=1,5)
-        READ(15)(SOLGPA(I,J),J=1,5)
-        READ(15)(SOLSPA(I,J),J=1,5)
-        READ(15)(SGNTPA(I,J),J=1,5)
-        READ(15)(SGNGPA(I,J),J=1,5)
-        READ(15)(SGNSPA(I,J),J=1,5)
+      READ(15)(SOLTHA(I,J),J=1,5)
+      READ(15)(SOLGHA(I,J),J=1,5)
+      READ(15)(SOLSHA(I,J),J=1,5)
+      READ(15)(SGNTHA(I,J),J=1,5)
+      READ(15)(SGNGHA(I,J),J=1,5)
+      READ(15)(SGNSHA(I,J),J=1,5)
+      READ(15)(SOLTPA(I,J),J=1,5)
+      READ(15)(SOLGPA(I,J),J=1,5)
+      READ(15)(SOLSPA(I,J),J=1,5)
+      READ(15)(SGNTPA(I,J),J=1,5)
+      READ(15)(SGNGPA(I,J),J=1,5)
+      READ(15)(SGNSPA(I,J),J=1,5)
  20   CONTINUE
- 
       READ(15)(SWLSHA(I),I=1,15)
       READ(15)(SWLGHA(I),I=1,15)
       READ(15)(SWLTHA(I),I=1,15)
@@ -8746,7 +8111,7 @@ C  ON FIRST READ FILE IS EMPTY AND RETURN THROUGH LINE 70 ... GENE P.
       READ(15)(SWNGPA(I),I=1,15)
       READ(15)(SWNTPA(I),I=1,15)
       READ(15)(SOLTHP(I),I=1,5)
-      READ(15)(SOLGHP(I),I=1,5)
+       READ(15)(SOLGHP(I),I=1,5)
       READ(15)(SOLSHP(I),I=1,5)
       READ(15)(SGNTHP(I),I=1,5)
       READ(15)(SGNGHP(I),I=1,5)
@@ -8759,17 +8124,14 @@ C  ON FIRST READ FILE IS EMPTY AND RETURN THROUGH LINE 70 ... GENE P.
       READ(15)(SGNSPP(I),I=1,5)
       READ(15)SWLSHP,SWLGHP,SWLTHP,SWNSHP,SWNTHP,SWNGHP
      *,SWLSPP,SWLGPP,SWLTPP,SWNSPP,SWNGPP,SWNTPP
-	 
       DO 40 I=1,15
-        READ(15)(HLOLE(I,J),J=1,22)
-        READ(15)(DPLOLE(I,J),J=1,22)
-        READ(15)(EUES(I,J),J=1,22)
+      READ(15)(HLOLE(I,J),J=1,22)
+      READ(15)(DPLOLE(I,J),J=1,22)
+      READ(15)(EUES(I,J),J=1,22)
  40   CONTINUE
- 
       DO 60 I=1,15
-        READ(15)(XNEWA(I,J),J=1,3)
+      READ(15)(XNEWA(I,J),J=1,3)
  60   CONTINUE
- 
       READ(15)(XNEWP(J),J=1,3)
 C  ADDED THIS LINE ... GENE PRESTON
       READ(15) WOLSHA
@@ -8778,8 +8140,6 @@ C  ADDED THIS LINE ... GENE PRESTON
       CLOSE(15)
       RETURN
       END
-
-
       SUBROUTINE DGECO(A,LDA,N,IPVT,RCOND,Z)
       INTEGER LDA,N,IPVT(*)
       DOUBLE PRECISION A(LDA,*),Z(*)
@@ -8854,9 +8214,8 @@ C     COMPUTE 1-NORM OF A
 C
       ANORM = 0.0D0
       DO 10 J = 1, N
-	    ANORM = DMAX1(ANORM,DASUM(N,A(1,J),1))
+	 ANORM = DMAX1(ANORM,DASUM(N,A(1,J),1))
    10 CONTINUE
-   
 C
 C     FACTOR
 C
@@ -8873,124 +8232,107 @@ C     SOLVE TRANS(U)*W = E
 C
       EK = 1.0D0
       DO 20 J = 1, N
-	    Z(J) = 0.0D0
+	 Z(J) = 0.0D0
    20 CONTINUE
-      
-	  DO 100 K = 1, N
-	    IF (Z(K) .NE. 0.0D0) EK = DSIGN(EK,-Z(K))
-	    IF (DABS(EK-Z(K)) .LE. DABS(A(K,K))) GO TO 30
+      DO 100 K = 1, N
+	 IF (Z(K) .NE. 0.0D0) EK = DSIGN(EK,-Z(K))
+	 IF (DABS(EK-Z(K)) .LE. DABS(A(K,K))) GO TO 30
 	    S = DABS(A(K,K))/DABS(EK-Z(K))
 	    CALL DSCAL(N,S,Z,1)
 	    EK = S*EK
-		
-   30   CONTINUE
-   
-	    WK = EK - Z(K)
-	    WKM = -EK - Z(K)
-	    S = DABS(WK)
-	    SM = DABS(WKM)
-	    IF (A(K,K) .EQ. 0.0D0) GO TO 40
-	      WK = WK/A(K,K)
-	      WKM = WKM/A(K,K)
-	      GO TO 50
-   40   CONTINUE
-	      WK = 1.0D0
-	      WKM = 1.0D0
-   50   CONTINUE
-   
-	    KP1 = K + 1
-	    IF (KP1 .GT. N) GO TO 90
-	      DO 60 J = KP1, N
-	        SM = SM + DABS(Z(J)+WKM*A(K,J))
-	        Z(J) = Z(J) + WK*A(K,J)
-	        S = S + DABS(Z(J))
-   60     CONTINUE
-	      IF (S .GE. SM) GO TO 80
-	        T = WKM - WK
-	        WK = WKM
-	        DO 70 J = KP1, N
-		      Z(J) = Z(J) + T*A(K,J)
-   70       CONTINUE
-   80     CONTINUE
-   90   CONTINUE
-   
-	    Z(K) = WK
+   30    CONTINUE
+	 WK = EK - Z(K)
+	 WKM = -EK - Z(K)
+	 S = DABS(WK)
+	 SM = DABS(WKM)
+	 IF (A(K,K) .EQ. 0.0D0) GO TO 40
+	    WK = WK/A(K,K)
+	    WKM = WKM/A(K,K)
+	 GO TO 50
+   40    CONTINUE
+	    WK = 1.0D0
+	    WKM = 1.0D0
+   50    CONTINUE
+	 KP1 = K + 1
+	 IF (KP1 .GT. N) GO TO 90
+	    DO 60 J = KP1, N
+	       SM = SM + DABS(Z(J)+WKM*A(K,J))
+	       Z(J) = Z(J) + WK*A(K,J)
+	       S = S + DABS(Z(J))
+   60       CONTINUE
+	    IF (S .GE. SM) GO TO 80
+	       T = WKM - WK
+	       WK = WKM
+	       DO 70 J = KP1, N
+		  Z(J) = Z(J) + T*A(K,J)
+   70          CONTINUE
+   80       CONTINUE
+   90    CONTINUE
+	 Z(K) = WK
   100 CONTINUE
-  
       S = 1.0D0/DASUM(N,Z,1)
       CALL DSCAL(N,S,Z,1)
-	  
 C
 C     SOLVE TRANS(L)*Y = W
 C
       DO 120 KB = 1, N
-	    K = N + 1 - KB
-	    IF (K .LT. N) Z(K) = Z(K) + DDOT(N-K,A(K+1,K),1,Z(K+1),1)
-	    IF (DABS(Z(K)) .LE. 1.0D0) GO TO 110
+	 K = N + 1 - KB
+	 IF (K .LT. N) Z(K) = Z(K) + DDOT(N-K,A(K+1,K),1,Z(K+1),1)
+	 IF (DABS(Z(K)) .LE. 1.0D0) GO TO 110
 	    S = 1.0D0/DABS(Z(K))
 	    CALL DSCAL(N,S,Z,1)
-  110   CONTINUE
-	    L = IPVT(K)
-	    T = Z(L)
-	    Z(L) = Z(K)
-	    Z(K) = T
+  110    CONTINUE
+	 L = IPVT(K)
+	 T = Z(L)
+	 Z(L) = Z(K)
+	 Z(K) = T
   120 CONTINUE
-  
       S = 1.0D0/DASUM(N,Z,1)
       CALL DSCAL(N,S,Z,1)
-	  
 C
       YNORM = 1.0D0
 C
 C     SOLVE L*V = Y
 C
       DO 140 K = 1, N
-	    L = IPVT(K)
-	    T = Z(L)
-	    Z(L) = Z(K)
-	    Z(K) = T
-	    IF (K .LT. N) CALL DAXPY(N-K,T,A(K+1,K),1,Z(K+1),1)
-	    IF (DABS(Z(K)) .LE. 1.0D0) GO TO 130
+	 L = IPVT(K)
+	 T = Z(L)
+	 Z(L) = Z(K)
+	 Z(K) = T
+	 IF (K .LT. N) CALL DAXPY(N-K,T,A(K+1,K),1,Z(K+1),1)
+	 IF (DABS(Z(K)) .LE. 1.0D0) GO TO 130
 	    S = 1.0D0/DABS(Z(K))
 	    CALL DSCAL(N,S,Z,1)
 	    YNORM = S*YNORM
-  130   CONTINUE
+  130    CONTINUE
   140 CONTINUE
-  
       S = 1.0D0/DASUM(N,Z,1)
       CALL DSCAL(N,S,Z,1)
       YNORM = S*YNORM
-	  
 C
 C     SOLVE  U*Z = V
 C
       DO 160 KB = 1, N
-	    K = N + 1 - KB
-	    IF (DABS(Z(K)) .LE. DABS(A(K,K))) GO TO 150
+	 K = N + 1 - KB
+	 IF (DABS(Z(K)) .LE. DABS(A(K,K))) GO TO 150
 	    S = DABS(A(K,K))/DABS(Z(K))
 	    CALL DSCAL(N,S,Z,1)
 	    YNORM = S*YNORM
-  150   CONTINUE
-	    IF (A(K,K) .NE. 0.0D0) Z(K) = Z(K)/A(K,K)
-	    IF (A(K,K) .EQ. 0.0D0) Z(K) = 1.0D0
-	    T = -Z(K)
-	    CALL DAXPY(K-1,T,A(1,K),1,Z(1),1)
+  150    CONTINUE
+	 IF (A(K,K) .NE. 0.0D0) Z(K) = Z(K)/A(K,K)
+	 IF (A(K,K) .EQ. 0.0D0) Z(K) = 1.0D0
+	 T = -Z(K)
+	 CALL DAXPY(K-1,T,A(1,K),1,Z(1),1)
   160 CONTINUE
-  
 C     MAKE ZNORM = 1.0
       S = 1.0D0/DASUM(N,Z,1)
-	  
       CALL DSCAL(N,S,Z,1)
       YNORM = S*YNORM
 C
       IF (ANORM .NE. 0.0D0) RCOND = YNORM/ANORM
       IF (ANORM .EQ. 0.0D0) RCOND = 0.0D0
-	  
       RETURN
       END
-	  
-	  
-	  
       SUBROUTINE DGEFA(A,LDA,N,IPVT,INFO)
       INTEGER LDA,N,IPVT(*),INFO
       DOUBLE PRECISION A(LDA,*)
@@ -9050,57 +8392,50 @@ C
       NM1 = N - 1
       IF (NM1 .LT. 1) GO TO 70
       DO 60 K = 1, NM1
-	    KP1 = K + 1
+	 KP1 = K + 1
 C
 C        FIND L = PIVOT INDEX
 C
-	    L = IDAMAX(N-K+1,A(K,K),1) + K - 1
-	    IPVT(K) = L
+	 L = IDAMAX(N-K+1,A(K,K),1) + K - 1
+	 IPVT(K) = L
 C
 C        ZERO PIVOT IMPLIES THIS COLUMN ALREADY TRIANGULARIZED
 C
-	    IF (A(L,K) .EQ. 0.0D0) GO TO 40
+	 IF (A(L,K) .EQ. 0.0D0) GO TO 40
 C
 C           INTERCHANGE IF NECESSARY
 C
-	      IF (L .EQ. K) GO TO 10
-	         T = A(L,K)
-	         A(L,K) = A(K,K)
-	         A(K,K) = T
-   10     CONTINUE
+	    IF (L .EQ. K) GO TO 10
+	       T = A(L,K)
+	       A(L,K) = A(K,K)
+	       A(K,K) = T
+   10       CONTINUE
 C
 C           COMPUTE MULTIPLIERS
 C
-	      T = -1.0D0/A(K,K)
-	      CALL DSCAL(N-K,T,A(K+1,K),1)
+	    T = -1.0D0/A(K,K)
+	    CALL DSCAL(N-K,T,A(K+1,K),1)
 C
 C           ROW ELIMINATION WITH COLUMN INDEXING
 C
-	      DO 30 J = KP1, N
-	        T = A(L,J)
-	        IF (L .EQ. K) GO TO 20
-		      A(L,J) = A(K,J)
-		      A(K,J) = T
-   20       CONTINUE
-	        CALL DAXPY(N-K,T,A(K+1,K),1,A(K+1,J),1)
-   30     CONTINUE
-	      GO TO 50
-   40   CONTINUE
-   
+	    DO 30 J = KP1, N
+	       T = A(L,J)
+	       IF (L .EQ. K) GO TO 20
+		  A(L,J) = A(K,J)
+		  A(K,J) = T
+   20          CONTINUE
+	       CALL DAXPY(N-K,T,A(K+1,K),1,A(K+1,J),1)
+   30       CONTINUE
+	 GO TO 50
+   40    CONTINUE
 	    INFO = K
-   50   CONTINUE
-   
+   50    CONTINUE
    60 CONTINUE
-   
    70 CONTINUE
-   
       IPVT(N) = N
       IF (A(N,N) .EQ. 0.0D0) INFO = N
-	  
       RETURN
       END
-	  
-	  
       SUBROUTINE  DSCAL(N,DA,DX,INCX)
 C
 C     SCALES A VECTOR BY A CONSTANT.
@@ -9117,7 +8452,7 @@ C        CODE FOR INCREMENT NOT EQUAL TO 1
 C
       NINCX = N*INCX
       DO 10 I = 1,NINCX,INCX
-	     DX(I) = DA*DX(I)
+	DX(I) = DA*DX(I)
    10 CONTINUE
       RETURN
 C
@@ -9142,8 +8477,6 @@ C
    50 CONTINUE
       RETURN
       END
-	  
-	  
       INTEGER FUNCTION IDAMAX(N,DX,INCX)
 C
 C     FINDS THE INDEX OF ELEMENT HAVING MAX. ABSOLUTE VALUE.
@@ -9181,8 +8514,6 @@ C
    30 CONTINUE
       RETURN
       END
-	  
-	  
       DOUBLE PRECISION FUNCTION DASUM(N,DX,INCX)
 C
 C     TAKES THE SUM OF THE ABSOLUTE VALUES.
@@ -9224,8 +8555,6 @@ C
    60 DASUM = DTEMP
       RETURN
       END
-	  
-	  
       SUBROUTINE DAXPY(N,DA,DX,INCX,DY,INCY)
 C
 C     CONSTANT TIMES A VECTOR PLUS A VECTOR.
@@ -9247,9 +8576,9 @@ C
       IF(INCX.LT.0)IX = (-N+1)*INCX + 1
       IF(INCY.LT.0)IY = (-N+1)*INCY + 1
       DO 10 I = 1,N
-	    DY(IY) = DY(IY) + DA*DX(IX)
-	    IX = IX + INCX
-	    IY = IY + INCY
+	DY(IY) = DY(IY) + DA*DX(IX)
+	IX = IX + INCX
+	IY = IY + INCY
    10 CONTINUE
       RETURN
 C
@@ -9266,15 +8595,13 @@ C
       IF( N .LT. 4 ) RETURN
    40 MP1 = M + 1
       DO 50 I = MP1,N,4
-	    DY(I) = DY(I) + DA*DX(I)
-	    DY(I + 1) = DY(I + 1) + DA*DX(I + 1)
-	    DY(I + 2) = DY(I + 2) + DA*DX(I + 2)
-	    DY(I + 3) = DY(I + 3) + DA*DX(I + 3)
+	DY(I) = DY(I) + DA*DX(I)
+	DY(I + 1) = DY(I + 1) + DA*DX(I + 1)
+	DY(I + 2) = DY(I + 2) + DA*DX(I + 2)
+	DY(I + 3) = DY(I + 3) + DA*DX(I + 3)
    50 CONTINUE
       RETURN
       END
-	  
-	  
       DOUBLE PRECISION FUNCTION DDOT(N,DX,INCX,DY,INCY)
 C
 C     FORMS THE DOT PRODUCT OF TWO VECTORS.
@@ -9323,9 +8650,6 @@ C
    60 DDOT = DTEMP
       RETURN
       END
-	  
-	  
-	  
       SUBROUTINE DGEDI(A,LDA,N,IPVT,DET,WORK,JOB)
       INTEGER LDA,N,IPVT(*),JOB
       DOUBLE PRECISION A(LDA,*),DET(2),WORK(*)
@@ -9393,28 +8717,26 @@ C
 C     COMPUTE DETERMINANT
 C
       IF (JOB/10 .EQ. 0) GO TO 70
-	    DET(1) = 1.0D0
-	    DET(2) = 0.0D0
-	    TEN = 10.0D0
-	    DO 50 I = 1, N
-	      IF (IPVT(I) .NE. I) DET(1) = -DET(1)
-	      DET(1) = A(I,I)*DET(1)
+	 DET(1) = 1.0D0
+	 DET(2) = 0.0D0
+	 TEN = 10.0D0
+	 DO 50 I = 1, N
+	    IF (IPVT(I) .NE. I) DET(1) = -DET(1)
+	    DET(1) = A(I,I)*DET(1)
 C        ...EXIT
-	      IF (DET(1) .EQ. 0.0D0) GO TO 60
-		  
+	    IF (DET(1) .EQ. 0.0D0) GO TO 60
    10       IF (DABS(DET(1)) .GE. 1.0D0) GO TO 20
-	          DET(1) = TEN*DET(1)
-	          DET(2) = DET(2) - 1.0D0
-	        GO TO 10
+	       DET(1) = TEN*DET(1)
+	       DET(2) = DET(2) - 1.0D0
+	    GO TO 10
    20       CONTINUE
-   
    30       IF (DABS(DET(1)) .LT. TEN) GO TO 40
-	          DET(1) = DET(1)/TEN
-	          DET(2) = DET(2) + 1.0D0
-	        GO TO 30
+	       DET(1) = DET(1)/TEN
+	       DET(2) = DET(2) + 1.0D0
+	    GO TO 30
    40       CONTINUE
-   50   CONTINUE
-   60   CONTINUE
+   50    CONTINUE
+   60    CONTINUE
    70 CONTINUE
 C
 C     COMPUTE INVERSE(U)
@@ -9430,8 +8752,8 @@ C
 	       T = A(K,J)
 	       A(K,J) = 0.0D0
 	       CALL DAXPY(K,T,A(1,K),1,A(1,J),1)
-   80    CONTINUE
-   90    CONTINUE
+   80       CONTINUE
+   90       CONTINUE
   100    CONTINUE
 C
 C        FORM INVERSE(U)*INVERSE(L)
@@ -9456,8 +8778,6 @@ C
   150 CONTINUE
       RETURN
       END
-	  
-	  
       SUBROUTINE  DSWAP (N,DX,INCX,DY,INCY)
 C
 C     INTERCHANGES TWO VECTORS.
@@ -9513,7 +8833,3 @@ C
    50 CONTINUE
       RETURN
       END
-
-
-
-
