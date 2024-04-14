@@ -1,0 +1,84 @@
+      
+      DOUBLE PRECISION ATRIB(2),CLOCK,EVNTS(103),FINISH
+      COMMON ATRIB,CLOCK,EVNTS,FINISH,IPOINT,JDAY,JFREQ,                ERC00030
+     *JHOUR,JQTR,JSEED,JSTEP,MFA,NOAREA,NUMINQ,QTR(3),                  ERC00040
+     *LVLTRC,NOTIFY,IOI,IOJ,JHOURT,XLAST,SSQ,IREPD,IREPM,INDX           ERC00050
+C-----------------------------------------------------------------------ERC00060
+      COMMON /DEMAND/ DYLOAD(20,365),HRLOAD(20,8760),INTCH(60,365)      ERC00070
+     *,INTCHR(60,2) 
+      COMMON /DEMAN2/
+     *LSFLG(20),LSSFLG,MAXHR(20,365),MXPLHR(365),NFCST,NHRSYR,          ERC00080
+     *NOERR,NORR,PKLOAD(20),FU(20),PROBD(5),FCTERR(20,5)                ERC00090
+     *,IWINDO(20,6),MAXDAY(20),LDAREA(20)
+C-----------------------------------------------------------------------ERC00100
+      COMMON /GENS/ AVAIL(600),CAPAVL(20,600),CAPOWN(20,600),           ERC00110
+     *DERATE(600),ICLASS(600),IDATES(600,4),IGSEED(601),JPLOUT(52,120), ERC00120
+     *JNTOWN(600),NOGEN(20),NUNITS,PCTAVL(600),PLNDST(600),             ERC00130
+     *RANDG(600),RATES(600,4),RATING(600),SYSCON(20),SYSOWN(20),        ERC00140
+     *PROBC(9,2),PROBG(600,2),CAPCON(600)                               ERC00150
+C-----------------------------------------------------------------------ERC00160
+      COMMON /LINES/ CADJ(20),ILSEED(61),JCRIT(500),LINENO(60,60),      ERC00170
+     * LNCAP(60),LNSTAT(60),MARGIN(20),NLINES,PROBL(6,60),RANDL(60),    ERC00180
+     * SADJ(20),SFLAG,STMULT(60,2),MXCRIT                               ERC00190
+C-----------------------------------------------------------------------ERC00200
+      COMMON /TRANS/ JENT(20,20),TRNSFR(20),TRNSFJ(20)                  ERC00210
+C---------------------------------------------------------------------  ERC00220
+      COMMON/CNVRG/KVWHEN,KVSTAT,KVTYPE,KVLOC,KWHERE,CVTEST
+     *,XNEWA(20,3),XNEWP(3),SSQA(20,3),SSQP(3)
+C---------------------------------------------------------------------  ERC00240
+        COMMON /TM/ LP(100,3),BLPA,BB,BLP0,
+     *  BN(20,5),ZB,NR,NLS,CAPREQ(20),FLOW(100),LT(20)                  ERC00260
+       DOUBLE PRECISION BB(20,20),ZB(20,20),BLPA(100,18),BLP0(100)
+
+C--------------------------------------------------------------------
+C IRST CHANGED TO IREM AND IABORT ADDED- DEC 1993
+        COMMON/DUMP/INDUMP(100000),IREM,INTV,IABORT,INTVT,IRST
+C---------------------------------------------------------------------  ERC00270
+C  CHANGED PM TO PMX TO ELIMINATE CONFLICT WITH PM IN NARP ... GENE P. 1/27/89
+       COMMON /PMX/ MINRAN(20),MAXRAN(20),INHBT1(20),INHBT2(20),        ERC00280
+     *ID(600,8),WPEAK(20,52),UNAM(500),ITAB                             ERC00290
+C---------------------------------------------------------------------  ERC00300
+CC--- STSAR:AREA STATISTICS --- STSPL:POOL STATISTICS ----------------  ERC00310
+CC                                                                      ERC00320
+CC     SUFFIX IDENTIFICATION SCHEME                                     ERC00330
+CC=====================================================                 ERC00340
+CC      4TH DIGIT:             5TH DIGIT           6TH DIGIT            ERC00350
+CC         T -- TRANSMISSION      H -- HOURLY         A -- AREA         ERC00360
+CC         G -- GENERATION        P -- PEAK           P -- POOL         ERC00370
+CC=====================================================                 ERC00380
+      COMMON /STSAR/ LOLTHA(20,5),LOLGHA(20,5),LOLSHA(20,5),            ERC00390
+     *               MGNTHA(20,5),MGNGHA(20,5),MGNSHA(20,5),            ERC00400
+     *               LOLTPA(20,5),LOLGPA(20,5),LOLSPA(20,5),            ERC00410
+     *               MGNTPA(20,5),MGNGPA(20,5),MGNSPA(20,5)             ERC00420
+C---------------------------------------------------------------------- ERC00430
+      COMMON /STSR2/ SOLTHA(20,5),SOLGHA(20,5),SOLSHA(20,5),            ERC00440
+     *               SGNTHA(20,5),SGNGHA(20,5),SGNSHA(20,5),            ERC00450
+     *               SOLTPA(20,5),SOLGPA(20,5),SOLSPA(20,5),            ERC00460
+     *               SGNTPA(20,5),SGNGPA(20,5),SGNSPA(20,5)             ERC00470
+C---------------------------------------------------------------------- ERC00480
+      COMMON /STSR3/ WOLSHA(20),WGNSHA(20),WOLSPA(20),WGNSPA(20),       ERC00490
+     *               SWLSHA(20),SWNSHA(20),SWLSPA(20),SWNSPA(20),       ERC00500
+     *               SWLGHA(20),SWNGHA(20),SWLGPA(20),SWNGPA(20),       ERC00500
+     *               SWLTHA(20),SWNTHA(20),SWLTPA(20),SWNTPA(20),       ERC00500
+     *               WOLGHA(20),WGNGHA(20),WOLGPA(20),WGNGPA(20),
+     *               WOLTHA(20),WGNTHA(20),WOLTPA(20),WGNTPA(20)
+C---------------------------------------------------------------------- ERC00510
+      COMMON /STSPL/ LOLTHP(5),LOLGHP(5),LOLSHP(5),                     ERC00520
+     *               MGNTHP(5),MGNGHP(5),MGNSHP(5),                     ERC00530
+     *               LOLTPP(5),LOLGPP(5),LOLSPP(5),                     ERC00540
+     *               MGNTPP(5),MGNGPP(5),MGNSPP(5)                      ERC00550
+C---------------------------------------------------------------------- ERC00560
+      COMMON /STSP2/ SOLTHP(5),SOLGHP(5),SOLSHP(5),                     ERC00570
+     *               SGNTHP(5),SGNGHP(5),SGNSHP(5),                     ERC00580
+     *               SOLTPP(5),SOLGPP(5),SOLSPP(5),                     ERC00590
+     *               SGNTPP(5),SGNGPP(5),SGNSPP(5)                      ERC00600
+C---------------------------------------------------------------------- ERC00610
+      COMMON /STSP3/ WOLSHP,WGNSHP,WOLSPP,WGNSPP,                       ERC00620
+     *               WOLGHP,WGNGHP,WOLGPP,WGNGPP,
+     *               WOLTHP,WGNTHP,WOLTPP,WGNTPP,
+     *               SWLSHP,SWNSHP,SWLSPP,SWNSPP,                       ERC00630
+     *               SWLGHP,SWNGHP,SWLGPP,SWNGPP,                       ERC00630
+     *               SWLTHP,SWNTHP,SWLTPP,SWNTPP                        ERC00630
+C---------------------------------------------------------------------- ERC00640
+      COMMON /DISTR/ HLOLE(20,22),DPLOLE(20,22),EUES(20,22),MAXEUE,     ERC00650
+     *LSTEP,SUSTAT(16,6)                                                ERC00660

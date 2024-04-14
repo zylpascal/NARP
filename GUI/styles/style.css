@@ -1,0 +1,11 @@
+QLabel{{
+    color: {QTMATERIAL_SECONDARYCOLOR};
+    font:normal 300 16px "SimSun";
+    background-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+  .big_button {{
+    height: 64px;
+  }}
+QHeaderView {{
+  background-color: {QTMATERIAL_PRIMARYCOLOR};
+}}
